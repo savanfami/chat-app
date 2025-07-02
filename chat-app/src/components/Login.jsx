@@ -27,7 +27,7 @@ const Login = () => {
       const token = response.data.access_token;
       console.log(token, "token");
       localStorage.setItem("token", token);
-      navigate("/groups");
+      navigate("/chat");
     } catch (err) {
       console.error("Login failed:", err);
       setError(err.response?.data?.message || "Login failed");
