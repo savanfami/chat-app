@@ -7,8 +7,8 @@ const Nav = () => {
   //   // Redirect or navigate if needed
   // };
   return (
-     <nav className="flex justify-between items-center p-4 bg-blue-600 text-white shadow-md">
-      <div className="text-xl font-bold">Chat App</div>
+     <nav className="flex justify-between items-center p-4 bg-gray-600 text-white shadow-md">
+      <div className="text-xl font-bold">ChaT</div>
       <div>
         <button
         

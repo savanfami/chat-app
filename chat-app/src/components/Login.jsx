@@ -1,18 +1,20 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
+import { Link } from "react-router";
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  
   const handleLogin = () => {
     e.preventDefault();
-    console.log('Logging in with:', { email, password });
-    // Add login logic (API call, token storage, redirect, etc.)
+    console.log("Logging in with:", { email, password });
   };
   return (
- <div className="flex justify-center items-center h-screen bg-gray-100">
-      <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-full max-w-md">
+    <div className="flex justify-center items-center h-screen bg-gray-100">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-8 rounded shadow-md w-full max-w-md"
+      >
         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
         <input
           type="email"
@@ -36,9 +38,12 @@ const Login = () => {
         >
           Login
         </button>
+        <Link to="/signup" className="text-green-600 underline">
+          Sign Up here!!!
+        </Link>{" "}
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
