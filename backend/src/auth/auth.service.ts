@@ -1,17 +1,20 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
 import { Model } from 'mongoose';
 import { RegisterDto } from './dto/signup.dto';
 import * as bcrypt from 'bcrypt'
+import { LoginDto } from './dto';
+import { JwtService } from '@nestjs/jwt';
 // import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
     constructor(
-        @InjectModel(User.name) private userModel:Model<User>,
-    ){}
-      async signup(dto: RegisterDto) {
+        private jwtService: JwtService,
+        @InjectModel(User.name) private userModel: Model<User>,
+    ) { }
+    async signup(dto: RegisterDto) {
         const { email, password, username } = dto
         const emailExist = await this.userModel.findOne({ email })
         if (emailExist) {
@@ -25,6 +28,32 @@ export class AuthService {
         })
         return {
             message: 'user created successfully'
+        }
+    }
+
+    async signin(loginAuthDto: LoginDto) {
+        try {
+            const { email, password } = loginAuthDto;
+            const user = await this.userModel.findOne({ email: email });
+            if (!user) {
+                throw new UnauthorizedException('User not found');
+            }
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+
+            if (!isPasswordValid) {
+                throw new UnauthorizedException('Incorrect  password');
+            }
+            const payload = { userId: user._id };
+            const token = this.jwtService.sign(payload);
+            return {
+                access_token: token,
+                message: 'Login successful'
+            };
+        } catch (error) {
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
+            throw new InternalServerErrorException('An error occurred during sign in');
         }
     }
 }

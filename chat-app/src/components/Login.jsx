@@ -1,14 +1,41 @@
 import React, { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { axiosInstance } from "../../constants/axiosInstance";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const handleLogin = () => {
-    e.preventDefault();
-    console.log("Logging in with:", { email, password });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await axiosInstance.post("/auth/login", formData);
+      const token = response.data.access_token;
+      console.log(token, "token");
+      localStorage.setItem("token", token);
+      navigate("/groups");
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError(err.response?.data?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <form
@@ -16,31 +43,40 @@ const Login = () => {
         className="bg-white p-8 rounded shadow-md w-full max-w-md"
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
         <input
           type="email"
+          name="email"
           placeholder="Email"
           className="w-full p-2 mb-4 border rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={formData.email}
+          onChange={handleChange}
           required
         />
         <input
           type="password"
+          name="password"
           placeholder="Password"
           className="w-full p-2 mb-4 border rounded"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={formData.password}
+          onChange={handleChange}
           required
         />
         <button
           type="submit"
           className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+          disabled={loading}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
-        <Link to="/signup" className="text-green-600 underline">
-          Sign Up here!!!
-        </Link>{" "}
+
+        <div className="text-center mt-4">
+          <Link to="/signup" className="text-green-600 underline">
+            Sign Up here!!!
+          </Link>
+        </div>
       </form>
     </div>
   );
