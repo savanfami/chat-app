@@ -7,12 +7,12 @@ import { Model } from 'mongoose';
 export class GroupService {
     constructor(
         @InjectModel(Group.name) private groupModel: Model<Group>
-
     ) { }
 
-    async createGroup(name: string, creatorId: string) {
-        const newGroup = new this.groupModel({ name, members: [creatorId] });
-        return newGroup.save();
+    async createGroup(name: string, creatorId: string, members: string[]) {
+        const allMembers = [creatorId, ...members];
+        const group = new this.groupModel({ name, members: allMembers,createdBy:creatorId });
+        return group.save();
     }
     async getUserGroups(userId: string) {
         return this.groupModel.find({ members: userId });

@@ -25,9 +25,8 @@ const Login = () => {
     try {
       const response = await axiosInstance.post("/auth/login", formData);
       const token = response.data.access_token;
-      console.log(token, "token");
       localStorage.setItem("token", token);
-      navigate("/chat");
+      navigate("/chat",{replace:true});
     } catch (err) {
       console.error("Login failed:", err);
       setError(err.response?.data?.message || "Login failed");

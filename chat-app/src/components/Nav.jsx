@@ -1,24 +1,31 @@
-import React from 'react'
+import React from "react";
+import { useNavigate } from "react-router"; 
 
 const Nav = () => {
-  //  const handleLogout = () => {
-  //   // Perform logout logic here (e.g., clear token, Redux, localStorage)
-  //   console.log("User logged out");
-  //   // Redirect or navigate if needed
-  // };
+  const navigate = useNavigate();
+
+  const token = localStorage.getItem("token"); 
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  };
+
   return (
-     <nav className="flex justify-between items-center p-4 bg-gray-600 text-white shadow-md">
+    <nav className="flex justify-between items-center p-4 bg-gray-600 text-white shadow-md">
       <div className="text-xl font-bold">ChaT</div>
       <div>
-        <button
-        
-          className="bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition"
-        >
-          Logout
-        </button>
+        {token && (
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition cursor-pointer"
+          >
+            Logout
+          </button>
+        )}
       </div>
     </nav>
-  )
-}
+  );
+};
 
-export default Nav
+export default Nav;

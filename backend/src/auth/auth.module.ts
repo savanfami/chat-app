@@ -22,9 +22,9 @@ import { AuthGuard } from './auth.guard';
       }),
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService,AuthGuard],
   controllers: [AuthController],
-  exports:[AuthGuard]
+  exports:[AuthGuard,JwtModule]
 })
 export class AuthModule {
 

@@ -5,15 +5,24 @@ import React from "react";
 import SignUp from "./components/SignUp";
 import Login from "./components/Login";
 import ChatDashboard from "./components/chatComponents/ChatDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 function App() {
   return (
     <>
       <Routes>
         <Route path="/" element={<Layout />}>
-          <Route index element={<Login />} /> 
+          <Route index element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/chat" element={<ChatDashboard />}/>
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatDashboard />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </>

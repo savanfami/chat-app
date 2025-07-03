@@ -6,13 +6,14 @@ import { AuthGuard } from "src/auth/auth.guard";
 export class GroupController {
     constructor(private readonly groupService: GroupService) { }
     @UseGuards(AuthGuard)
-    @Post()
-    async createGroup(@Body('name') name: string, @Req() req) {
-        return this.groupService.createGroup(name, req.user.id);
+    @Post()    
+    async createGroup(@Body() body: { name: string; members: string[] }, @Req() req) {
+        const { name, members } = body;
+        return this.groupService.createGroup(name, req.user.userId,members);
     }
     @UseGuards(AuthGuard)
-    @Get()
+    @Get('my-groups')
     async getGroups(@Req() req) {
-        return this.groupService.getUserGroups(req.user.id);
+        return this.groupService.getUserGroups(req.user.userId);
     }
 }

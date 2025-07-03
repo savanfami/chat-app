@@ -56,4 +56,10 @@ export class AuthService {
             throw new InternalServerErrorException('An error occurred during sign in');
         }
     }
+
+    //route for listing users
+    async findAllExcept(currentUserId: string): Promise<User[]> {
+        return this.userModel.find({ _id: { $ne: currentUserId } });
+    }
+
 }
