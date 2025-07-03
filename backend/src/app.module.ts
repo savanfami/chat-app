@@ -5,7 +5,6 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GroupController } from './group/group.controller';
 import { GroupModule } from './group/group.module';
-import { MessageModule } from './message/message.module';
 import { ChatModule } from './chat/chat.module';
 
 @Module({
@@ -24,7 +23,6 @@ import { ChatModule } from './chat/chat.module';
 
     AuthModule,
     GroupModule,
-    MessageModule,
     ChatModule,
   ],
   controllers: [],

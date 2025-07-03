@@ -12,13 +12,13 @@ const Nav = () => {
   };
 
   return (
-    <nav className="flex justify-between items-center p-4 bg-gray-600 text-white shadow-md">
+    <nav className="flex justify-between items-center p-4 bg-blue-800 text-white shadow-md">
       <div className="text-xl font-bold">ChaT</div>
       <div>
         {token && (
           <button
             onClick={handleLogout}
-            className="bg-red-500 px-4 py-2 rounded hover:bg-red-600 transition cursor-pointer"
+            className="bg-black px-4 py-2 rounded transition cursor-pointer"
           >
             Logout
           </button>

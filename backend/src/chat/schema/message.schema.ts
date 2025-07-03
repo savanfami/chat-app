@@ -1,18 +1,23 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types } from "mongoose";
 
 @Schema({ timestamps: true })
 export class Message extends Document {
-    @Prop()
-    groupId: string;
+    @Prop({ type: Types.ObjectId, ref: 'Group' })
+    groupId: Types.ObjectId;
 
-    @Prop()
-    senderId: string;
+    @Prop({ type: Types.ObjectId, ref: 'User' })
+    sender: Types.ObjectId;
 
     @Prop()
     content: string;
+
+    @Prop()
+    edited: boolean;
 
     @Prop()
     mediaUrl?: string;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
+
