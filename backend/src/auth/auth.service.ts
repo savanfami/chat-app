@@ -35,6 +35,7 @@ export class AuthService {
         try {
             const { email, password } = loginAuthDto;
             const user = await this.userModel.findOne({ email: email });
+            // console.log(user,'userrrrrrr')
             if (!user) {
                 throw new UnauthorizedException('User not found');
             }
@@ -43,7 +44,7 @@ export class AuthService {
             if (!isPasswordValid) {
                 throw new UnauthorizedException('Incorrect  password');
             }
-            const payload = { userId: user._id };
+            const payload = { userId: user._id,username:user.username };
             const token = this.jwtService.sign(payload);
             return {
                 access_token: token,

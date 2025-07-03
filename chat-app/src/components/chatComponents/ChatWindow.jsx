@@ -1,59 +1,41 @@
 import React, { useState, useRef, useEffect } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
+import { jwtDecode } from "jwt-decode";
+import { useSocket } from "../../utils/customHooks/useSocket";
 
 const ChatWindow = ({ groupId }) => {
   const [messages, setMessages] = useState([]);
-  // const [message, setMessage] = useState("");
+  const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const token = localStorage.getItem("token");
 
-  const currentUser = "currentuser@example.com";
+  let currentUser = "";
+  if (token) {
+    const decoded = jwtDecode(token);
+    currentUser = decoded.userId;
+  }
 
-  const message = [
-    {
-      id: 1,
-      sender: "user1@example.com",
-      text: "Hey team! 👋",
-      timestamp: "10:30 AM",
-      isCurrentUser: false,
-    },
-    {
-      id: 2,
-      sender: "user2@example.com",
-      text: "Let's start the meeting. I have some updates to share with everyone.",
-      timestamp: "10:32 AM",
-      isCurrentUser: false,
-    },
-    {
-      id: 3,
-      sender: "currentuser@example.com",
-      text: "Sounds good! I'm ready.",
-      timestamp: "10:33 AM",
-      isCurrentUser: true,
-    },
-    {
-      id: 4,
-      sender: "user1@example.com",
-      text: "Perfect! Let me share my screen.",
-      timestamp: "10:34 AM",
-      isCurrentUser: false,
-    },
-  ];
+   const { sendMessage } = useSocket(groupId, (msg) => {
+    setMessages((prev) => [...prev, msg]);
+    console.log(messages,'meesaeges')
+  });
 
   const fetchMessages = async () => {
     if (!groupId) return;
     try {
       const response = await axiosInstance.get(`/messages/${groupId}`);
-      console.log(response,'resonseeeeeeeeee from msg secion')
+      // console.log(response, "resonseeeeeeeeee from msg secion");
+
       const formatted = response.data.map((msg) => ({
         id: msg._id,
-        sender: msg.sender.email || msg.sender, // adjust based on your schema
+        sender: msg.sender.email,
         text: msg.content,
         timestamp: new Date(msg.createdAt).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        isCurrentUser: msg.sender.email === currentUser,
+        isCurrentUser: msg.sender._id === currentUser,
       }));
       setMessages(formatted);
     } catch (error) {
@@ -83,6 +65,7 @@ const ChatWindow = ({ groupId }) => {
 
         const savedMessage = await axiosInstance.post("/messages", payload);
         // console.log('Message saved:', savedMessage);
+        sendMessage(savedMessage.data);
         setMessage("");
         setTimeout(() => inputRef.current?.focus(), 100);
       } catch (error) {
@@ -138,7 +121,6 @@ const ChatWindow = ({ groupId }) => {
 
   return (
     <div className="w-3/4 flex flex-col h-full bg-white">
-      {/* Chat Header */}
       <div className="px-6 py-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -146,12 +128,12 @@ const ChatWindow = ({ groupId }) => {
               G
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Group Chat</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="font-semibold text-gray-900"> Chat</h2>
+              {/* <p className="text-sm text-gray-500">
                 {messages.length > 0
                   ? `${messages.length} members`
                   : "No messages yet"}
-              </p>
+              </p> */}
             </div>
           </div>
         </div>
@@ -170,7 +152,6 @@ const ChatWindow = ({ groupId }) => {
                 msg.isCurrentUser ? "flex-row-reverse" : "flex-row"
               } gap-2`}
             >
-              {/* Avatar */}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${
                   msg.isCurrentUser ? "bg-blue-600" : "bg-gray-400"
@@ -179,7 +160,6 @@ const ChatWindow = ({ groupId }) => {
                 {getInitials(msg.sender)}
               </div>
 
-              {/* Message Bubble */}
               <div className="flex flex-col">
                 <div
                   className={`px-4 py-2 rounded-2xl shadow-sm ${
@@ -229,7 +209,6 @@ const ChatWindow = ({ groupId }) => {
             </svg>
           </button>
 
-          {/* Message Input */}
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -242,31 +221,17 @@ const ChatWindow = ({ groupId }) => {
               style={{ height: "auto" }}
             />
 
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors duration-200">
-              <svg
-                className="w-5 h-5 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </button>
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors duration-200"></button>
           </div>
 
           <button
             onClick={handleSend}
-            // disabled={!message.trim()}
-            // className={`p-3 rounded-full transition-all duration-200 flex-shrink-0 ${
-            //   message.trim()
-            //     ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-            //     : "bg-gray-200 text-gray-400 cursor-not-allowed"
-            // }`}
+            disabled={!message.trim()}
+            className={`p-3 rounded-full transition-all duration-200 flex-shrink-0 ${
+              message.trim()
+                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            }`}
           >
             <svg
               className="w-5 h-5"
