@@ -17,6 +17,9 @@ export class Message extends Document {
 
     @Prop()
     mediaUrl?: string;
+    
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

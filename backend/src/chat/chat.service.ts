@@ -22,4 +22,23 @@ export class ChatService {
         return this.messageModel.find({groupId})
         .sort({createdAt:1}).populate('sender')
     }
+
+//     async getUserInfo(userId: string) {
+//     try {
+//       const user = await this.userModel.findById(userId).select('email name _id');
+      
+//       if (!user) {
+//         throw new Error('User not found');
+//       }
+      
+//       return {
+//         _id: user._id,
+//         email: user.email,
+//         name: user.name || user.email.split('@')[0], // Fallback to email prefix if name doesn't exist
+//       };
+//     } catch (error) {
+//       throw new Error(`Failed to get user info: ${error.message}`);
+//     }
+//   }
+
 }

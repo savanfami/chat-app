@@ -44,7 +44,7 @@ export class AuthService {
             if (!isPasswordValid) {
                 throw new UnauthorizedException('Incorrect  password');
             }
-            const payload = { userId: user._id,username:user.username };
+            const payload = { userId: user._id, username: user.username };
             const token = this.jwtService.sign(payload);
             return {
                 access_token: token,
@@ -61,6 +61,10 @@ export class AuthService {
     //route for listing users
     async findAllExcept(currentUserId: string): Promise<User[]> {
         return this.userModel.find({ _id: { $ne: currentUserId } });
+    }
+
+    async getUserInfo(userId: string): Promise<User|null> {
+        return this.userModel.findById(userId)
     }
 
 }

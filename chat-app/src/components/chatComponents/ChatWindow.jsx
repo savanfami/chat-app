@@ -16,17 +16,23 @@ const ChatWindow = ({ groupId }) => {
     currentUser = decoded.userId;
   }
 
-   const { sendMessage } = useSocket(groupId, (msg) => {
-    setMessages((prev) => [...prev, msg]);
-    console.log(messages,'meesaeges')
+  const { sendMessage } = useSocket(groupId, (msg) => {
+    // Now the message comes with complete user info from backend
+    const formattedMsg = {
+      id: msg.id,
+      sender: msg.sender.email, // sender is now a complete user object
+      text: msg.content,
+      timestamp: msg.timestamp,
+      isCurrentUser: msg.sender._id === currentUser,
+    };
+    
+    setMessages((prev) => [...prev, formattedMsg]);
   });
 
   const fetchMessages = async () => {
     if (!groupId) return;
     try {
       const response = await axiosInstance.get(`/messages/${groupId}`);
-      // console.log(response, "resonseeeeeeeeee from msg secion");
-
       const formatted = response.data.map((msg) => ({
         id: msg._id,
         sender: msg.sender.email,
@@ -55,22 +61,16 @@ const ChatWindow = ({ groupId }) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (message.trim()) {
-      try {
-        const payload = {
-          groupId: groupId,
-          content: message,
-        };
-
-        const savedMessage = await axiosInstance.post("/messages", payload);
-        // console.log('Message saved:', savedMessage);
-        sendMessage(savedMessage.data);
-        setMessage("");
-        setTimeout(() => inputRef.current?.focus(), 100);
-      } catch (error) {
-        console.error("Failed to send message:", error);
-      }
+      const payload = {
+        groupId,
+        content: message,
+        sender: currentUser, 
+      };
+      sendMessage(payload); 
+      setMessage("");
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -129,11 +129,6 @@ const ChatWindow = ({ groupId }) => {
             </div>
             <div>
               <h2 className="font-semibold text-gray-900"> Chat</h2>
-              {/* <p className="text-sm text-gray-500">
-                {messages.length > 0
-                  ? `${messages.length} members`
-                  : "No messages yet"}
-              </p> */}
             </div>
           </div>
         </div>

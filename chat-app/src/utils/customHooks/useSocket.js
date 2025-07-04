@@ -1,26 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:3000'; // backend URL
+const SOCKET_URL = 'http://localhost:3000'; 
 
 export const useSocket = (groupId, onMessageReceived) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
     if (!groupId) return;
-
-    // connect to namespace like /chat-123
     const namespace = `/chat-${groupId}`;
     socketRef.current = io(`${SOCKET_URL}${namespace}`, {
       withCredentials: true,
       transports: ['websocket'],
     });
 
-    // Join room
     socketRef.current.emit('joinRoom', groupId);
 
-    // Listen for incoming messages
-    socketRef.current.on('message:receive', (msg) => {
+    socketRef.current.on('msgreceive', (msg) => {
+      console.log(msg,'message from backend')
       if (onMessageReceived) onMessageReceived(msg);
     });
 
@@ -29,10 +26,10 @@ export const useSocket = (groupId, onMessageReceived) => {
     };
   }, [groupId]);
 
-  // Send message
+  
   const sendMessage = (message) => {
     if (socketRef.current) {
-      socketRef.current.emit('message:create', message);
+      socketRef.current.emit('sendmsg', message);
     }
   };
 
