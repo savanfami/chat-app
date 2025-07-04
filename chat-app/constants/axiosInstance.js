@@ -1,10 +1,11 @@
 import axios from "axios";
 
+
 export const axiosInstance = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: import.meta.env.VITE_BACKENDURL,
   withCredentials: true,
 });
-
+  
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");

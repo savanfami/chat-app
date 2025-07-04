@@ -45,7 +45,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
     client.on('sendmsg', async (data) => {
       const { groupId, content, sender } = data;
-      console.log(data,'image file from front end')
       try {
         const savedMessage = await this.chatService.createMessage(data);
         // Get full user info including email
@@ -62,6 +61,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
             minute: "2-digit",
           }),
           createdAt: savedMessage.createdAt,
+          image:data.mediaUrl
         };
         client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
       } catch (err) {

@@ -11,9 +11,9 @@ export class ChatService {
     ) { }
 
     async createMessage(body: CreateMessageDto) {
-        console.log(body,'bodyyuyyy')
         const msg = new this.messageModel({
             ...body,
+            mediaUrl:body.mediaUrl,
             edited: body.edited ?? false
         })  
         return await msg.save()

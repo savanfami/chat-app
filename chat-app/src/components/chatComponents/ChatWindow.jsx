@@ -28,7 +28,7 @@ const ChatWindow = ({ groupId }) => {
       text: msg.content,
       timestamp: msg.timestamp,
       isCurrentUser: msg.sender._id === currentUser,
-      image: msg.image, // Add image support
+      image: msg.image, 
     };
 
     setMessages((prev) => [...prev, formattedMsg]);
@@ -48,7 +48,7 @@ const ChatWindow = ({ groupId }) => {
           minute: "2-digit",
         }),
         isCurrentUser: msg.sender._id === currentUser,
-        image: msg.image, // Add image support
+        image: msg.mediaUrl,
       }));
       setMessages(formatted);
     } catch (error) {
@@ -86,7 +86,6 @@ const ChatWindow = ({ groupId }) => {
         sender: currentUser,
         mediaUrl,
       };
-
       sendMessage(payload);
       setMessage("");
       setFile(null);
@@ -113,11 +112,9 @@ const ChatWindow = ({ groupId }) => {
     return username;
   };
 
-  // Handle file selection
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
-      console.log("File selected:", selectedFile);
       setFile(selectedFile);
     }
   };
@@ -201,8 +198,6 @@ const ChatWindow = ({ groupId }) => {
                       {getUserName(msg.username)}
                     </div>
                   )}
-
-                  {/* Display image if exists */}
                   {msg.image && (
                     <div className="mb-2">
                       <img
@@ -214,7 +209,6 @@ const ChatWindow = ({ groupId }) => {
                     </div>
                   )}
 
-                  {/* Display text if exists */}
                   {msg.text && (
                     <p className="text-sm leading-relaxed">{msg.text}</p>
                   )}
