@@ -43,39 +43,27 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       console.log(`Client ${client.id} joined room:======== ${roomId}`);
     });
 
-    // client.on('sendmsg',async (data) => {
-    //   console.log(data,'datatataatatat')
-    //   const { groupId, content, sender }=data
-    //   try {
-    //     const savedMessage = await this.chatService.createMessage(data);
-    //     namespace.emit('msgreceive', data);
-    //     console.log(`Message sent to room ${groupId} in namespace ${client.nsp.name}`);
-    //   } catch (err) {
-    //     this.logger.error('Failed to save or emit message:', err);
-    //   }
-    // });
     client.on('sendmsg', async (data) => {
       const { groupId, content, sender } = data;
+      console.log(data,'image file from front end')
       try {
         const savedMessage = await this.chatService.createMessage(data);
-        console.log(savedMessage,'savedMessage')
         // Get full user info including email
         const userInfo = await this.userService.getUserInfo(sender);
-        console.log(userInfo,'user info from auth svc')
-         const messageWithUserInfo = {
+        // console.log(savedMessage, 'savedMessage')//exclude password not done
+        // console.log(userInfo,'user info from auth svc')
+        const messageWithUserInfo = {
           id: savedMessage._id,
           groupId,
           content,
-          sender: userInfo, // Now contains full user object with email
-          timestamp: new Date(savedMessage.createdAt as any ).toLocaleTimeString([], {
+          sender: userInfo, 
+          timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
           createdAt: savedMessage.createdAt,
         };
-        
-
-        namespace.emit('msgreceive', messageWithUserInfo);
+        client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
       } catch (err) {
         this.logger.error('Failed to save or emit message:', err);
       }

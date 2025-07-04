@@ -17,7 +17,7 @@ export const useSocket = (groupId, onMessageReceived) => {
     socketRef.current.emit('joinRoom', groupId);
 
     socketRef.current.on('msgreceive', (msg) => {
-      console.log(msg,'message from backend')
+      // console.log(msg,'message from backend==')
       if (onMessageReceived) onMessageReceived(msg);
     });
 
