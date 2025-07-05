@@ -11,10 +11,52 @@ export class GroupService {
 
     async createGroup(name: string, creatorId: string, members: string[]) {
         const allMembers = [creatorId, ...members];
-        const group = new this.groupModel({ name, members: allMembers,createdBy:creatorId });
+        const group = new this.groupModel({ name, members: allMembers, createdBy: creatorId });
         return group.save();
     }
     async getUserGroups(userId: string) {
         return this.groupModel.find({ members: userId });
     }
+
+    async updateLastMessage(groupId: string, content: string | null, mediaUrl: string | null) {
+        let lastMessage: {
+            content: string | null;
+            msgType: string | null;
+            createdAt: Date | null;
+        };
+
+        if (content && mediaUrl) {
+            lastMessage = {
+                content: content,
+                msgType: 'mediaimage',
+                createdAt: new Date(),
+            };
+        } else if (mediaUrl) {
+            lastMessage = {
+                content: null,
+                msgType: 'image',
+                createdAt: new Date(),
+            };
+        } else if (content) {
+            lastMessage = {
+                content: content,
+                msgType: 'text',
+                createdAt: new Date(),
+            };
+        } else {
+            lastMessage = {
+                content: null,
+                msgType: null,
+                createdAt: null,
+            };
+        }
+
+        return this.groupModel.findByIdAndUpdate(
+            groupId,
+            { lastMessage },
+            { new: true }
+        );
+
+    }
+
 }

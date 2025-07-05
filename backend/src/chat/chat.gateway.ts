@@ -1,4 +1,5 @@
 import { Server as SocketIOServer } from 'socket.io';
+import { AuthGuard } from 'src/auth/auth.guard';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -7,9 +8,10 @@ import {
   WebSocketServer
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthService } from 'src/auth/auth.service';
+import { GroupService } from 'src/group/group.service';
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
@@ -19,6 +21,8 @@ import { AuthService } from 'src/auth/auth.service';
     credentials: true,
   },
 })
+@UseGuards(AuthGuard)
+
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: SocketIOServer;
@@ -28,6 +32,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   constructor(
     private readonly chatService: ChatService,
     private readonly userService: AuthService,
+    private readonly groupService: GroupService
   ) { }
   afterInit(server: SocketIOServer) {
     // console.log('websocket conenction initialised')
@@ -40,7 +45,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
     client.on('joinRoom', (roomId: string) => {
       client.join(roomId);
-      console.log(`Client ${client.id} joined room:======== ${roomId}`);
+      console.log(`Client ${client.id} ====== ${roomId}`);
     });
 
     client.on('sendmsg', async (data) => {
@@ -55,15 +60,20 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           id: savedMessage._id,
           groupId,
           content,
-          sender: userInfo, 
+          sender: userInfo,
           timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
           createdAt: savedMessage.createdAt,
-          image:data.mediaUrl
+          image: data.mediaUrl
         };
         client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
+        const updatelastmsg = await this.groupService.updateLastMessage(groupId, content, data.mediaUrl)
+        // client.nsp.to(groupId).emit('updatelastmsg', updatelastmsg);
+        this.server.emit('updatelastmsg', updatelastmsg);//for glbl emitting sidebar of chat app
+
+
       } catch (err) {
         this.logger.error('Failed to save or emit message:', err);
       }
@@ -74,9 +84,5 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     console.log(`Client disconnected from ${client.nsp.name}`);
   }
 
-  // emitToRoom(namespaceName: string, roomId: string, event: string, data: any) {
-  //   if (this.server) {
-  //     this.server.of(namespaceName).to(roomId).emit(event, data);
-  //   }
-  // }
+
 }
