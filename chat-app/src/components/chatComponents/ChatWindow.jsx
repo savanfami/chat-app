@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
 import { jwtDecode } from "jwt-decode";
 import { useSocket } from "../../utils/customHooks/useSocket";
@@ -23,38 +23,44 @@ const ChatWindow = ({ groupId }) => {
     currentUser = decoded.userId;
   }
 
+  // Memoize the callback functions
+  const handleMessageReceived = useCallback((msg) => {
+    const formattedMsg = {
+      id: msg.id,
+      sender: msg.sender.email,
+      username: msg.sender.username,
+      text: msg.content,
+      timestamp: msg.timestamp,
+      isCurrentUser: msg.sender._id === currentUser,
+      image: msg.image,
+      isEdited: msg.isEdited || false,
+    };
+
+    setMessages((prev) => [...prev, formattedMsg]);
+  }, [currentUser]);
+
+  const handleMessageEdited = useCallback((updatedMsg) => {
+    console.log('Received edited message:', updatedMsg);
+    // Handle message edit response
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === updatedMsg._id || msg.id === updatedMsg.id
+          ? {
+              ...msg,
+              text: updatedMsg.content,
+              isEdited: true,
+            }
+          : msg
+      )
+    );
+    setEditingMessage(null);
+    setEditText("");
+  }, []);
+
   const { sendMessage, editMessage } = useSocket(
     groupId,
-    (msg) => {
-      const formattedMsg = {
-        id: msg.id,
-        sender: msg.sender.email,
-        username: msg.sender.username,
-        text: msg.content,
-        timestamp: msg.timestamp,
-        isCurrentUser: msg.sender._id === currentUser,
-        image: msg.image,
-        isEdited: msg.isEdited || false,
-      };
-
-      setMessages((prev) => [...prev, formattedMsg]);
-    },
-    (updatedMsg) => {
-      // Handle message edit response
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === updatedMsg.id
-            ? {
-                ...msg,
-                text: updatedMsg.content,
-                isEdited: true,
-              }
-            : msg
-        )
-      );
-      setEditingMessage(null);
-      setEditText("");
-    }
+    handleMessageReceived,
+    handleMessageEdited
   );
 
   const fetchMessages = async () => {

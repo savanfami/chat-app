@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 
 const SOCKET_URL = "http://localhost:3000";
@@ -6,8 +6,19 @@ const SOCKET_URL = "http://localhost:3000";
 export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
   const socketRef = useRef(null);
 
+  // Memoize the callback functions to prevent unnecessary re-renders
+  const handleMessageReceived = useCallback((msg) => {
+    if (onMessageReceived) onMessageReceived(msg);
+  }, [onMessageReceived]);
+
+  const handleMessageEdited = useCallback((msg) => {
+    console.log(msg, "msg from backend");
+    if (onMessageEdited) onMessageEdited(msg);
+  }, [onMessageEdited]);
+
   useEffect(() => {
     if (!groupId) return;
+
     const namespace = `/chat-${groupId}`;
     socketRef.current = io(`${SOCKET_URL}${namespace}`, {
       withCredentials: true,
@@ -16,32 +27,30 @@ export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
 
     socketRef.current.emit("joinRoom", groupId);
 
-    socketRef.current.on("msgreceive", (msg) => {
-      if (onMessageReceived) onMessageReceived(msg);
-    });
-
-
-    socketRef.current.on("editmsgrecieve", (msg) => {
-      console.log(msg, "msg from backend");
-      if (onMessageEdited) onMessageEdited(msg);
-    });
+    // Set up event listeners
+    socketRef.current.on("msgreceive", handleMessageReceived);
+    socketRef.current.on("editmsgrecieve", handleMessageEdited);
 
     return () => {
-      socketRef.current.disconnect();
+      if (socketRef.current) {
+        socketRef.current.off("msgreceive", handleMessageReceived);
+        socketRef.current.off("editmsgrecieve", handleMessageEdited);
+        socketRef.current.disconnect();
+      }
     };
-  }, [groupId]);
+  }, [groupId, handleMessageReceived, handleMessageEdited]);
 
-  const sendMessage = (message) => {
+  const sendMessage = useCallback((message) => {
     if (socketRef.current) {
       socketRef.current.emit("sendmsg", message);
     }
-  };
+  }, []);
 
-  const editMessage = (editData) => {
+  const editMessage = useCallback((editData) => {
     if (socketRef.current) {
       socketRef.current.emit("editMsg", editData);
     }
-  };
+  }, []);
 
   return { sendMessage, editMessage };
 };
