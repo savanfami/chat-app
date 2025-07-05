@@ -6,7 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GroupController } from './group/group.controller';
 import { GroupModule } from './group/group.module';
 import { ChatModule } from './chat/chat.module';
-import { GlobalModule } from './global/global.module';
+// import { GlobalModule } from './global/global.module';
 
 @Module({
   imports: [
@@ -25,7 +25,7 @@ import { GlobalModule } from './global/global.module';
     AuthModule,
     GroupModule,
     ChatModule,
-    GlobalModule,
+    // GlobalModule,
   ],
   controllers: [],
   providers: [],

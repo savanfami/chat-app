@@ -21,7 +21,7 @@ import { GroupService } from 'src/group/group.service';
     credentials: true,
   },
 })
-@UseGuards(AuthGuard)
+// @UseGuards(AuthGuard)
 
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -70,8 +70,8 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           image: data.mediaUrl
         };
         client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
-        const updatelastmsg = await this.groupService.updateLastMessage(groupId, content, data.mediaUrl)
-        // client.nsp.to(groupId).emit('updatelastmsg', updatelastmsg);
+        // const updatelastmsg = await this.groupService.updateLastMessage(groupId, content, data.mediaUrl)
+        // // client.nsp.to(groupId).emit('updatelastmsg', updatelastmsg);
       } catch (err) {
         this.logger.error('Failed to save or emit message:', err);
       }
@@ -79,12 +79,12 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
 
     client.on('editMsg', async (data) => {
+      console.log(data,'editemedd')
       const { content, messageId, groupId } = data
       const editedmsg = await this.chatService.editMessage(messageId, content)
-      client.nsp.to(groupId).emit('editmsgrecieve', editedmsg)
+      console.log(editedmsg,'editedmsgssssssssss')
+      client.nsp.to(groupId).emit('editmsgrecieve',editedmsg)
     })
-
-
 
   }
 

@@ -22,13 +22,14 @@ export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
 
 
     socketRef.current.on("editmsgrecieve", (msg) => {
+      console.log(msg, "msg from backend");
       if (onMessageEdited) onMessageEdited(msg);
     });
 
     return () => {
       socketRef.current.disconnect();
     };
-  }, [groupId, onMessageReceived, onMessageEdited]);
+  }, [groupId]);
 
   const sendMessage = (message) => {
     if (socketRef.current) {

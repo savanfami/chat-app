@@ -8,61 +8,61 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const socketRef = useRef(null);
 
-  useEffect(() => {
-    if (!socketRef.current) {
-      socketRef.current = io("http://localhost:3000", {
-        withCredentials: true,
-        transports: ["websocket"],
-        auth: {
-          token: localStorage.getItem("token"), 
-        },
-      });
-    }
+  // useEffect(() => {
+  //   if (!socketRef.current) {
+  //     socketRef.current = io("http://localhost:3000", {
+  //       withCredentials: true,
+  //       transports: ["websocket"],
+  //       auth: {
+  //         token: localStorage.getItem("token"), 
+  //       },
+  //     });
+  //   }
 
-    const socket = socketRef.current;
+    // const socket = socketRef.current;
 
-    socket.on("updatelastmsg", (updatedGroup) => {
-      console.log(updatedGroup, "updated grouppppppp=====");
-      setGroups((prevGroups) =>
-        prevGroups.map((g) =>
-          g._id === updatedGroup._id
-            ? { ...g, lastMessage: updatedGroup.lastMessage }
-            : g
-        )
-      );
-    });
+  //   socket.on("updatelastmsg", (updatedGroup) => {
+  //     console.log(updatedGroup, "updated grouppppppp=====");
+  //     setGroups((prevGroups) =>
+  //       prevGroups.map((g) =>
+  //         g._id === updatedGroup._id
+  //           ? { ...g, lastMessage: updatedGroup.lastMessage }
+  //           : g
+  //       )
+  //     );
+  //   });
 
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-    });
+  //   socket.on("connect", () => {
+  //     console.log("Socket connected:", socket.id);
+  //   });
 
-    socket.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-    });
+  //   socket.on("disconnect", (reason) => {
+  //     console.log("Socket disconnected:", reason);
+  //   });
 
-    socket.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-    });
+  //   socket.on("connect_error", (error) => {
+  //     console.error("Socket connection error:", error);
+  //   });
 
-    // Cleanup function
-    return () => {
-      if (socket) {
-        socket.off("updatelastmsg");
-        socket.off("connect");
-        socket.off("disconnect");
-        socket.off("connect_error");
-      }
-    };
-  }, []);
+  //   // Cleanup function
+  //   return () => {
+  //     if (socket) {
+  //       socket.off("updatelastmsg");
+  //       socket.off("connect");
+  //       socket.off("disconnect");
+  //       socket.off("connect_error");
+  //     }
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-    };
-  }, []);
+  // useEffect(() => {
+  //   return () => {
+  //     if (socketRef.current) {
+  //       socketRef.current.disconnect();
+  //       socketRef.current = null;
+  //     }
+  //   };
+  // }, []);
 
   const fetchUserGroups = async () => {
     try {
