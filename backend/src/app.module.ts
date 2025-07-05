@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GroupController } from './group/group.controller';
 import { GroupModule } from './group/group.module';
 import { ChatModule } from './chat/chat.module';
+import { GlobalModule } from './global/global.module';
 // import { GlobalModule } from './global/global.module';
 
 @Module({
@@ -20,12 +21,12 @@ import { ChatModule } from './chat/chat.module';
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGO_URI'),
       }),
-    }),
+    }), 
 
     AuthModule,
     GroupModule,
     ChatModule,
-    // GlobalModule,
+    GlobalModule,
   ],
   controllers: [],
   providers: [],

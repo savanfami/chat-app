@@ -29,7 +29,7 @@ const Nav = () => {
           )}
           <button
             onClick={handleLogout}
-            className="bg-black  text-white text-sm md:text-base px-4 py-2 rounded-lg shadow transition duration-300"
+            className="bg-black cursor-pointer text-white text-sm md:text-base px-4 py-2 rounded-lg shadow transition duration-300"
           >
             Logout
           </button>

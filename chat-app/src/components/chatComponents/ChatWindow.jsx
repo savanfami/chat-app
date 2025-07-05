@@ -405,17 +405,12 @@ const ChatWindow = ({ groupId }) => {
                             ref={editInputRef}
                             value={editText}
                             onChange={(e) => setEditText(e.target.value)}
-                            onKeyPress={handleEditKeyPress}
+                            onKeyDown={handleEditKeyPress}
                             className="bg-white text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm resize-none min-h-[60px]"
                             autoFocus
                           />
                           <div className="flex gap-2">
-                            <button
-                              onClick={handleSaveEdit}
-                              className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                            >
-                              Save
-                            </button>
+                          
                             <button
                               onClick={handleCancelEdit}
                               className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
@@ -596,7 +591,7 @@ const ChatWindow = ({ groupId }) => {
               placeholder="Type your message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               rows={1}
               style={{ height: "auto" }}
             />
@@ -647,4 +642,4 @@ const ChatWindow = ({ groupId }) => {
   );
 }
 
-export default ChatWindow;
+export default ChatWindow; 

@@ -18,7 +18,7 @@ export class ChatController {
     @UseGuards(AuthGuard)
     @Get(':groupId')
     async getMessageByGroup(@Param('groupId') groupId: string) {
-        return this.chatservice.getMessagesForGroup(groupId)
+        return this.chatservice.getMessagesForGroup(groupId) 
     }
 
 

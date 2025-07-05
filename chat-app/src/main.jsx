@@ -4,11 +4,15 @@ import "./index.css";
 import App from "./App.jsx";
 import { BrowserRouter } from "react-router";
 import React from "react";
+// import { SocketProvider } from "./utils/common/socketContext.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      {/* <SocketProvider> */}
+        <App />
+      {/* </SocketProvider> */}
     </BrowserRouter>
   </StrictMode>
 );
+ 

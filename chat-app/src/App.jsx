@@ -6,26 +6,47 @@ import SignUp from "./components/SignUp";
 import Login from "./components/Login";
 import ChatDashboard from "./components/chatComponents/ChatDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { PublicRoute } from "./components/PublicRoutes";
+
 
 function App() {
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <ChatDashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-      </Routes>
-    </>
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route
+          index
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <SignUp />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatDashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+    </Routes>
   );
 }
 
