@@ -490,6 +490,6 @@ const ChatWindow = ({ groupId }) => {
       </div>
     </div>
   );
-};
+}
 
 export default ChatWindow;
