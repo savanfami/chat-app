@@ -6,6 +6,7 @@ import { uploadToCloudinary } from "../../utils/common/cloudinary";
 
 const ChatWindow = ({ groupId }) => {
   const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const [messages, setMessages] = useState([]);
@@ -23,6 +24,37 @@ const ChatWindow = ({ groupId }) => {
     currentUser = decoded.userId;
   }
 
+  // Function to get file type
+  const getFileType = (file) => {
+    if (!file) return null;
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    return 'file';
+  };
+
+  // Function to get media type from URL
+  const getMediaTypeFromUrl = (url) => {
+    if (!url) return null;
+    const extension = url.split('.').pop().toLowerCase();
+    const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+    const videoExtensions = ['mp4', 'mov', 'avi', 'wmv', 'flv', 'webm', 'mkv'];
+    
+    if (imageExtensions.includes(extension)) return 'image';
+    if (videoExtensions.includes(extension)) return 'video';
+    return 'file';
+  };
+
+  // Function to create file preview
+  const createFilePreview = (file) => {
+    const fileType = getFileType(file);
+    if (fileType === 'image' || fileType === 'video') {
+      const url = URL.createObjectURL(file);
+      setFilePreview({ url, type: fileType });
+    } else {
+      setFilePreview(null);
+    }
+  };
+
   // Memoize the callback functions
   const handleMessageReceived = useCallback((msg) => {
     const formattedMsg = {
@@ -33,6 +65,7 @@ const ChatWindow = ({ groupId }) => {
       timestamp: msg.timestamp,
       isCurrentUser: msg.sender._id === currentUser,
       image: msg.image,
+      mediaUrl: msg.mediaUrl, // Make sure to include mediaUrl
       isEdited: msg.isEdited || false,
     };
 
@@ -77,7 +110,8 @@ const ChatWindow = ({ groupId }) => {
           minute: "2-digit",
         }),
         isCurrentUser: msg.sender._id === currentUser,
-        image: msg.mediaUrl,
+        image: msg.mediaUrl, // Keep for backward compatibility
+        mediaUrl: msg.mediaUrl, // Add mediaUrl field
         isEdited: msg.isEdited || false,
       }));
       setMessages(formatted);
@@ -105,6 +139,15 @@ const ChatWindow = ({ groupId }) => {
     }
   }, [editingMessage]);
 
+  // Cleanup file preview URL when component unmounts or file changes
+  useEffect(() => {
+    return () => {
+      if (filePreview?.url) {
+        URL.revokeObjectURL(filePreview.url);
+      }
+    };
+  }, [filePreview]);
+
   const handleSend = async () => {
     if (!message.trim() && !file) return;
 
@@ -126,6 +169,7 @@ const ChatWindow = ({ groupId }) => {
       sendMessage(payload);
       setMessage("");
       setFile(null);
+      setFilePreview(null);
       setIsUploading(false);
       setTimeout(() => inputRef.current?.focus(), 100);
     } catch (err) {
@@ -184,7 +228,63 @@ const ChatWindow = ({ groupId }) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
+      createFilePreview(selectedFile);
     }
+  };
+
+  const handleRemoveFile = () => {
+    if (filePreview?.url) {
+      URL.revokeObjectURL(filePreview.url);
+    }
+    setFile(null);
+    setFilePreview(null);
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Function to render media content in messages
+  const renderMediaContent = (mediaUrl) => {
+    if (!mediaUrl) return null;
+    
+    const mediaType = getMediaTypeFromUrl(mediaUrl);
+    
+    if (mediaType === 'image') {
+      return (
+        <div className="mb-2">
+          <img
+            src={mediaUrl}
+            alt="Shared image"
+            className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => window.open(mediaUrl, "_blank")}
+          />
+        </div>
+      );
+    } else if (mediaType === 'video') {
+      return (
+        <div className="mb-2">
+          <video
+            src={mediaUrl}
+            controls
+            className="max-w-full h-auto rounded-lg"
+            style={{ maxHeight: '300px' }}
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   if (!groupId) {
@@ -294,16 +394,8 @@ const ChatWindow = ({ groupId }) => {
                     </button>
                   )}
 
-                  {msg.image && (
-                    <div className="mb-2">
-                      <img
-                        src={msg.image}
-                        alt="Shared image"
-                        className="max-w-full h-auto rounded-lg cursor-pointer"
-                        onClick={() => window.open(msg.image, "_blank")}
-                      />
-                    </div>
-                  )}
+                  {/* Render media content - supports both images and videos */}
+                  {(msg.image || msg.mediaUrl) && renderMediaContent(msg.mediaUrl || msg.image)}
 
                   {msg.text && (
                     <>
@@ -361,44 +453,107 @@ const ChatWindow = ({ groupId }) => {
 
       {/* Message Input */}
       <div className="p-4 bg-white border-t border-gray-200">
-        {/* File Preview */}
+        {/* Enhanced File Preview */}
         {file && (
-          <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-gray-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="text-sm text-gray-700">{file.name}</span>
+          <div className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-3">
+              {/* Thumbnail/Preview */}
+              <div className="flex-shrink-0 relative">
+                {filePreview?.type === 'image' ? (
+                  <div className="relative">
+                    <img
+                      src={filePreview.url}
+                      alt="Preview"
+                      className="w-20 h-20 object-cover rounded-lg border border-gray-300 shadow-sm"
+                    />
+                    {/* Delete button overlay on image */}
+                    <button
+                      onClick={handleRemoveFile}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors duration-200"
+                      title="Remove image"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : filePreview?.type === 'video' ? (
+                  <div className="relative">
+                    <video
+                      src={filePreview.url}
+                      className="w-20 h-20 object-cover rounded-lg border border-gray-300 shadow-sm"
+                      muted
+                    />
+                    {/* Play button overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                    {/* Delete button overlay on video */}
+                    <button
+                      onClick={handleRemoveFile}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors duration-200"
+                      title="Remove video"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="w-20 h-20 bg-gray-200 rounded-lg border border-gray-300 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    {/* Delete button for other files */}
+                    <button
+                      onClick={handleRemoveFile}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors duration-200"
+                      title="Remove file"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => setFile(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
+
+              {/* File Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {file.name}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatFileSize(file.size)}
+                  </p>
+                  {filePreview?.type && (
+                    <span className="inline-flex items-center px-2 py-1 mt-2 bg-blue-100 text-blue-800 rounded-full text-xs font-medium w-fit">
+                      {filePreview.type === 'image' ? (
+                        <>
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          Image
+                        </>
+                      ) : filePreview.type === 'video' ? (
+                        <>
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Video
+                        </>
+                      ) : (
+                        'File'
+                      )}
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -408,7 +563,7 @@ const ChatWindow = ({ groupId }) => {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/*"
             className="hidden"
             onChange={handleFileChange}
           />

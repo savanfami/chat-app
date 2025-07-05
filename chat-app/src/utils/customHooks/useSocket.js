@@ -1,20 +1,24 @@
 import { useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:3000";
+const SOCKET_URL = import.meta.env.VITE_SOCKETURL;
 
 export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
   const socketRef = useRef(null);
 
-  // Memoize the callback functions to prevent unnecessary re-renders
-  const handleMessageReceived = useCallback((msg) => {
-    if (onMessageReceived) onMessageReceived(msg);
-  }, [onMessageReceived]);
+  const handleMessageReceived = useCallback(
+    (msg) => {
+      if (onMessageReceived) onMessageReceived(msg);
+    },
+    [onMessageReceived]
+  );
 
-  const handleMessageEdited = useCallback((msg) => {
-    console.log(msg, "msg from backend");
-    if (onMessageEdited) onMessageEdited(msg);
-  }, [onMessageEdited]);
+  const handleMessageEdited = useCallback(
+    (msg) => {
+      if (onMessageEdited) onMessageEdited(msg);
+    },
+    [onMessageEdited]
+  );
 
   useEffect(() => {
     if (!groupId) return;
@@ -27,7 +31,6 @@ export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
 
     socketRef.current.emit("joinRoom", groupId);
 
-    // Set up event listeners
     socketRef.current.on("msgreceive", handleMessageReceived);
     socketRef.current.on("editmsgrecieve", handleMessageEdited);
 
