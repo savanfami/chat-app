@@ -24,7 +24,10 @@ export class ChatService {
             .sort({ createdAt: 1 }).populate('sender')
     }
 
-    
+    async editMessage(msgId:string, content:any) {
+        return this.messageModel.findByIdAndUpdate(msgId, { $set: {content} }, { new: true })
+    }
 
-    
+
+
 }

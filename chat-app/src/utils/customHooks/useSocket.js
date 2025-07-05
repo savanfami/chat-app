@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 
 const SOCKET_URL = "http://localhost:3000";
 
-export const useSocket = (groupId, onMessageReceived,onLastMessageUpdate) => {
+export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -17,19 +17,18 @@ export const useSocket = (groupId, onMessageReceived,onLastMessageUpdate) => {
     socketRef.current.emit("joinRoom", groupId);
 
     socketRef.current.on("msgreceive", (msg) => {
-      // console.log(msg,'message from backend==')
       if (onMessageReceived) onMessageReceived(msg);
     });
 
-    socketRef.current.on("updatelastmsg", (updatedGroup) => {
-      console.log(updatedGroup,'newwwwwwwww')
-      if (onLastMessageUpdate) onLastMessageUpdate(updatedGroup);
+
+    socketRef.current.on("editmsgrecieve", (msg) => {
+      if (onMessageEdited) onMessageEdited(msg);
     });
 
     return () => {
       socketRef.current.disconnect();
     };
-  }, [groupId]);
+  }, [groupId, onMessageReceived, onMessageEdited]);
 
   const sendMessage = (message) => {
     if (socketRef.current) {
@@ -37,5 +36,11 @@ export const useSocket = (groupId, onMessageReceived,onLastMessageUpdate) => {
     }
   };
 
-  return { sendMessage };
+  const editMessage = (editData) => {
+    if (socketRef.current) {
+      socketRef.current.emit("editMsg", editData);
+    }
+  };
+
+  return { sendMessage, editMessage };
 };

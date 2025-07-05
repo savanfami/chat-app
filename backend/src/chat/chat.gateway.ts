@@ -32,7 +32,8 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   constructor(
     private readonly chatService: ChatService,
     private readonly userService: AuthService,
-    private readonly groupService: GroupService
+    private readonly groupService: GroupService,
+
   ) { }
   afterInit(server: SocketIOServer) {
     // console.log('websocket conenction initialised')
@@ -71,14 +72,23 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
         const updatelastmsg = await this.groupService.updateLastMessage(groupId, content, data.mediaUrl)
         // client.nsp.to(groupId).emit('updatelastmsg', updatelastmsg);
-        this.server.emit('updatelastmsg', updatelastmsg);//for glbl emitting sidebar of chat app
-
-
       } catch (err) {
         this.logger.error('Failed to save or emit message:', err);
       }
     });
+
+
+    client.on('editMsg', async (data) => {
+      const { content, messageId, groupId } = data
+      const editedmsg = await this.chatService.editMessage(messageId, content)
+      client.nsp.to(groupId).emit('editmsgrecieve', editedmsg)
+    })
+
+
+
   }
+
+
 
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected from ${client.nsp.name}`);

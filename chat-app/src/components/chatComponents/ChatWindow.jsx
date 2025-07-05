@@ -10,8 +10,11 @@ const ChatWindow = ({ groupId }) => {
   const fileInputRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editText, setEditText] = useState("");
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const editInputRef = useRef(null);
   const token = localStorage.getItem("token");
 
   let currentUser = "";
@@ -20,19 +23,39 @@ const ChatWindow = ({ groupId }) => {
     currentUser = decoded.userId;
   }
 
-  const { sendMessage } = useSocket(groupId, (msg) => {
-    const formattedMsg = {
-      id: msg.id,
-      sender: msg.sender.email,
-      username: msg.sender.username,
-      text: msg.content,
-      timestamp: msg.timestamp,
-      isCurrentUser: msg.sender._id === currentUser,
-      image: msg.image, 
-    };
+  const { sendMessage, editMessage } = useSocket(
+    groupId,
+    (msg) => {
+      const formattedMsg = {
+        id: msg.id,
+        sender: msg.sender.email,
+        username: msg.sender.username,
+        text: msg.content,
+        timestamp: msg.timestamp,
+        isCurrentUser: msg.sender._id === currentUser,
+        image: msg.image,
+        isEdited: msg.isEdited || false,
+      };
 
-    setMessages((prev) => [...prev, formattedMsg]);
-  });
+      setMessages((prev) => [...prev, formattedMsg]);
+    },
+    (updatedMsg) => {
+      console.log(updatedMsg,'updateddddddddd><><>')
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === updatedMsg._id
+            ? {
+                ...msg,
+                text: updatedMsg.content,
+                isEdited: true,
+              }
+            : msg
+        )
+      );
+      setEditingMessage(null);
+      setEditText("");
+    }
+  );
 
   const fetchMessages = async () => {
     if (!groupId) return;
@@ -49,6 +72,7 @@ const ChatWindow = ({ groupId }) => {
         }),
         isCurrentUser: msg.sender._id === currentUser,
         image: msg.mediaUrl,
+        isEdited: msg.isEdited || false,
       }));
       setMessages(formatted);
     } catch (error) {
@@ -67,6 +91,13 @@ const ChatWindow = ({ groupId }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Focus edit input when editing starts
+  useEffect(() => {
+    if (editingMessage && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [editingMessage]);
 
   const handleSend = async () => {
     if (!message.trim() && !file) return;
@@ -97,10 +128,41 @@ const ChatWindow = ({ groupId }) => {
     }
   };
 
+  const handleEdit = (msg) => {
+    setEditingMessage(msg.id);
+    setEditText(msg.text);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editText.trim()) return;
+
+    const payload = {
+      messageId: editingMessage,
+      content: editText,
+      groupId,
+    };
+    
+    editMessage(payload);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setEditText("");
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleEditKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === "Escape") {
+      handleCancelEdit();
     }
   };
 
@@ -175,7 +237,7 @@ const ChatWindow = ({ groupId }) => {
             <div
               className={`flex max-w-xs lg:max-w-md ${
                 msg.isCurrentUser ? "flex-row-reverse" : "flex-row"
-              } gap-2`}
+              } gap-2 group`}
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${
@@ -187,7 +249,7 @@ const ChatWindow = ({ groupId }) => {
 
               <div className="flex flex-col">
                 <div
-                  className={`px-4 py-2 rounded-2xl shadow-sm ${
+                  className={`px-4 py-2 rounded-2xl shadow-sm relative ${
                     msg.isCurrentUser
                       ? "bg-blue-600 text-white rounded-br-md"
                       : "bg-white text-gray-900 rounded-bl-md border border-gray-200"
@@ -198,6 +260,34 @@ const ChatWindow = ({ groupId }) => {
                       {getUserName(msg.username)}
                     </div>
                   )}
+                  
+                  {/* Edit button for current user's messages */}
+                  {msg.isCurrentUser && msg.text && (
+                    <button
+                      onClick={() => handleEdit(msg)}
+                      className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
+                        msg.isCurrentUser
+                          ? "bg-white text-blue-600 shadow-md"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                      title="Edit message"
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
                   {msg.image && (
                     <div className="mb-2">
                       <img
@@ -210,7 +300,43 @@ const ChatWindow = ({ groupId }) => {
                   )}
 
                   {msg.text && (
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    <>
+                      {editingMessage === msg.id ? (
+                        <div className="flex flex-col gap-2">
+                          <textarea
+                            ref={editInputRef}
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            onKeyPress={handleEditKeyPress}
+                            className="bg-white text-gray-900 border border-gray-300 rounded px-2 py-1 text-sm resize-none min-h-[60px]"
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleSaveEdit}
+                              className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm leading-relaxed">{msg.text}</p>
+                          {msg.isEdited && (
+                            <span className="text-xs opacity-70 italic">
+                              (edited)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 <div
