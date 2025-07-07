@@ -8,6 +8,9 @@ export const useGlobalSocket = () => {
     console.log('Attempting to connect to Socket.IO server...');
     
     const socket = io('http://localhost:3000', {
+      auth:{
+        token:localStorage.getItem('token')
+      },
       withCredentials: true,
       transports: ['websocket', 'polling'], // Try both transports
       timeout: 20000, // 20 second timeout
@@ -20,6 +23,11 @@ export const useGlobalSocket = () => {
       console.log('✅ Connected to global socket:', socket.id);
       console.log('Transport:', socket.io.engine.transport.name);
     });
+
+
+    socket.on('fetchGroups',(data)=>{
+      console.log(data,'dataafd')
+    })
     
     socket.on('globalConnected', (data) => {
       console.log('✅ Global connection confirmed:', data.message);
