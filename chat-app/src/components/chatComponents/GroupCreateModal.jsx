@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
+import { useGlobalSocket } from "../../utils/common/globalSocket";
 
 const GroupCreateModal = ({ onClose,onGroupCreated}) => {
   const [groupName, setGroupName] = useState("");
@@ -7,6 +8,8 @@ const GroupCreateModal = ({ onClose,onGroupCreated}) => {
   const [allUsers, setAllUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+
+    const socketRef = useGlobalSocket();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -21,23 +24,45 @@ const GroupCreateModal = ({ onClose,onGroupCreated}) => {
     fetchUsers();
   }, []);
 
+
+   useEffect(() => {
+    if (!socketRef.current) return;
+
+    const socket = socketRef.current;
+
+    const handleGroupCreated = (group) => {
+      console.log("📦 Group created:", group);
+      onGroupCreated(group); 
+      onClose();
+    };
+
+    socket.on("groupCreated", handleGroupCreated);
+
+    return () => {
+      socket.off("groupCreated", handleGroupCreated);
+    };
+  }, [socketRef.current]);
+
   const handleCreateGroup = async () => {
     if (!groupName.trim()) return;
     
     setIsLoading(true);
-    try {
-      const response = await axiosInstance.post("/groups", {
-        name: groupName,
-        members: members,
-      });
-      console.log("Group Created:", response.data);
-      onGroupCreated()
-      onClose();
-    } catch (err) {
-      console.error("Error creating group:", err);
-    } finally {
-      setIsLoading(false);
-    }
+    socketRef.current.emit('createGroup',
+      {name:groupName,members}
+    )
+    // try {
+    //   const response = await axiosInstance.post("/groups", {
+    //     name: groupName,
+    //     members: members,
+    //   });
+    //   console.log("Group Created:", response.data);
+    //   onGroupCreated()
+    //   onClose();
+    // } catch (err) {
+    //   console.error("Error creating group:", err);
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
 

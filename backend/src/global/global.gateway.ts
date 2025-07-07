@@ -1,37 +1,47 @@
+import {
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    WebSocketGateway,
+    WebSocketServer,
+} from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
+import { GroupService } from 'src/group/group.service';
 
-// import {
-//   WebSocketGateway,
-//   WebSocketServer,
-//   OnGatewayConnection,
-//   OnGatewayDisconnect,
-//   OnGatewayInit
-// } from '@nestjs/websockets';
-// import { Server, Socket } from 'socket.io';
+@WebSocketGateway({
+    cors: {
+        origin: 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+        credentials: true,
+    },
+})
+export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
+    @WebSocketServer()
+    server: Server;
 
-// @WebSocketGateway({
-//   cors: {
-//     // origin: 'http://localhost:5173',  
-//     origin: '*',  
-//   },
-// })
-// export class GlobalGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-//   @WebSocketServer() server: Server;
+    private readonly logger = new Logger(GlobalGateway.name);
+    constructor(
+  private readonly groupService: GroupService
+) {}
+    afterInit(server: Server) {
+        console.log('WebSocket Gateway initialized');
+    }
 
-//   afterInit(server: Server) {
-//     console.log('Global socket server initialized');
-//   }
+    handleConnection(client: Socket) {
+        console.log(`Global client connected: ${client.id}`);
 
-//   handleConnection(client: Socket) {
-//     console.log(`Client connected: ${client.id}`);
-//     // You can broadcast global events, or track global presence here
-//   }
+        client.on('createGroup', (groupName: string) => {
+            try {
+                console.log('msg hee', groupName,)
+            } catch (error) {
+                
+            }
+        })
 
-//   handleDisconnect(client: Socket) {
-//     console.log(`Client disconnected: ${client.id}`);
-//   }
 
-//   // Emit to all connected clients
-//   emitGlobalEvent(eventName: string, payload: any) {
-//     this.server.emit(eventName, payload);
-//   }
-// }
+    }
+
+    handleDisconnect(client: Socket) {
+        console.log(`Global client disconnected: ${client.id}`);
+    }
+}
