@@ -7,7 +7,7 @@ import Login from "./components/Login";
 import ChatDashboard from "./components/chatComponents/ChatDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { PublicRoute } from "./components/PublicRoutes";
-
+import { SocketProvider } from "./context/socketContext";
 
 function App() {
   return (
@@ -41,7 +41,9 @@ function App() {
           path="/chat"
           element={
             <ProtectedRoute>
-              <ChatDashboard />
+              <SocketProvider>
+                <ChatDashboard />
+              </SocketProvider>
             </ProtectedRoute>
           }
         />

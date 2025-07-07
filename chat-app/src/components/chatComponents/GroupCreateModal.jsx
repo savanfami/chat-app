@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
-import { useGlobalSocket } from "../../utils/common/globalSocket";
 
 const GroupCreateModal = ({ onClose, onGroupCreated }) => {
   const [groupName, setGroupName] = useState("");

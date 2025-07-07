@@ -1,66 +1,66 @@
-import { useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+// import { useEffect, useRef } from 'react';
+// import { io } from 'socket.io-client';
 
-export const useGlobalSocket = () => {
-  const socketRef = useRef(null);
+// export const useGlobalSocket = () => {
+//   const socketRef = useRef(null);
   
-  useEffect(() => {
-    console.log('Attempting to connect to Socket.IO server...');
+//   useEffect(() => {
+//     console.log('Attempting to connect to Socket.IO server...');
     
-    const socket = io('http://localhost:3000', {
-      auth:{
-        token:localStorage.getItem('token')
-      },
-      withCredentials: true,
-      transports: ['websocket', 'polling'], // Try both transports
-      timeout: 20000, // 20 second timeout
-      forceNew: true,
-    });
+//     const socket = io('http://localhost:3000', {
+//       auth:{
+//         token:localStorage.getItem('token')
+//       },
+//       withCredentials: true,
+//       transports: ['websocket', 'polling'], // Try both transports
+//       timeout: 20000, // 20 second timeout
+//       forceNew: true,
+//     });
     
-    socketRef.current = socket;
+//     socketRef.current = socket;
     
-    socket.on('connect', () => {
-      console.log('✅ Connected to global socket:', socket.id);
-      console.log('Transport:', socket.io.engine.transport.name);
-    });
+//     socket.on('connect', () => {
+//       console.log('✅ Connected to global socket:', socket.id);
+//       console.log('Transport:', socket.io.engine.transport.name);
+//     });
 
 
-    socket.on('fetchGroups',(data)=>{
-      console.log(data,'dataafd')
-    })
+//     socket.on('fetchGroups',(data)=>{
+//       console.log(data,'dataafd')
+//     })
     
-    socket.on('globalConnected', (data) => {
-      console.log('✅ Global connection confirmed:', data.message);
-    });
+//     socket.on('globalConnected', (data) => {
+//       console.log('✅ Global connection confirmed:', data.message);
+//     });
     
-    socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error);
-      console.error('Error type:', error.type);
-      console.error('Error description:', error.description);
-    });
+//     socket.on('connect_error', (error) => {
+//       console.error('❌ Socket connection error:', error);
+//       console.error('Error type:', error.type);
+//       console.error('Error description:', error.description);
+//     });
     
-    socket.on('disconnect', (reason) => {
-      console.log('🔌 Socket disconnected:', reason);
-    });
+//     socket.on('disconnect', (reason) => {
+//       console.log('🔌 Socket disconnected:', reason);
+//     });
     
-    socket.on('reconnect', (attemptNumber) => {
-      console.log('🔄 Reconnected after', attemptNumber, 'attempts');
-    });
+//     socket.on('reconnect', (attemptNumber) => {
+//       console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+//     });
     
-    socket.on('reconnect_error', (error) => {
-      console.error('❌ Reconnection error:', error);
-    });
+//     socket.on('reconnect_error', (error) => {
+//       console.error('❌ Reconnection error:', error);
+//     });
     
-    // Test if the server is reachable
-    // fetch('http://localhost:3000')
-    //   .then(() => console.log('✅ Server is reachable'))
-    //   .catch(() => console.error('❌ Server is not reachable'));
+//     // Test if the server is reachable
+//     // fetch('http://localhost:3000')
+//     //   .then(() => console.log('✅ Server is reachable'))
+//     //   .catch(() => console.error('❌ Server is not reachable'));
     
-    return () => {
-      console.log('Disconnecting socket...');
-      socket.disconnect();
-    };
-  }, []);
+//     return () => {
+//       console.log('Disconnecting socket...');
+//       socket.disconnect();
+//     };
+//   }, []);
   
-  return socketRef;
-};
+//   return socketRef;
+// };

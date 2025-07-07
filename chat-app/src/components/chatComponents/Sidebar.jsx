@@ -1,20 +1,13 @@
 import axios from "axios";
 import React, { useEffect, useState, useRef } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
-import { useGlobalSocket } from "../../utils/common/globalSocket";
 
 const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
-  const socketRef = useGlobalSocket();
 
-  useEffect(() => {
-    if (socketRef.current) {
-      
-      // socketRef.current.emit("requestSidebarUpdate", userId);
-    }
-  }, []);
+
 
   const fetchUserGroups = async () => {
     try {
