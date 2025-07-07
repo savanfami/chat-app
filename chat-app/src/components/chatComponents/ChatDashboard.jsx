@@ -15,7 +15,7 @@ const ChatDashboard = () => {
         onCreateGroup={() => setGroupModalOpen(true)}
         onSelectGroup={setSelectedGroupId}
         groupCreatedTrigger={groupCreatedTrigger}
-      />    
+      />
       <ChatWindow groupId={selectedGroupId} />
       {isGroupModalOpen && (
         <GroupCreateModal

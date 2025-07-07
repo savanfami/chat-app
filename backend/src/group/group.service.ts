@@ -59,4 +59,12 @@ export class GroupService {
 
     }
 
+
+    async getGroupMemberIds(groupId: string): Promise<string[]> {
+        const group = await this.groupModel.findById(groupId).select('members');
+        if (!group) throw new Error('Group not found');
+        return group.members.map((m: any) => m.toString()); 
+    }
+
+
 }

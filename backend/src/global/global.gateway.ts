@@ -8,7 +8,9 @@ import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { GroupService } from 'src/group/group.service';
 import * as Jwt from 'jsonwebtoken';
+import { Injectable } from '@nestjs/common';
 
+@Injectable()
 @WebSocketGateway({
   cors: {
     origin: 'http://localhost:5173',
@@ -26,6 +28,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(private readonly groupService: GroupService) {}
 
   afterInit(server: Server) {
+    // Optional server init logic
   }
 
   handleConnection(client: Socket) {
@@ -37,7 +40,6 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const userId = (decoded as Jwt.JwtPayload).userId as string;
 
       this.userSocketMap.set(userId, client.id);
-
       client.data.userId = userId;
 
       client.on('createGroup', async (data) => {
@@ -45,13 +47,11 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
           const { name, members } = data;
           const newGroup = await this.groupService.createGroup(name, userId, members);
           const groupMemberIds = [...members, userId];
+
           for (const memberId of groupMemberIds) {
             const socketId = this.userSocketMap.get(memberId);
             if (socketId) {
               this.server.to(socketId).emit('groupCreated', newGroup);
-            //   Optional: Emit updated groups list to each member
-            //   const memberGroups = await this.groupService.getUserGroups(memberId);
-            //   this.server.to(socketId).emit('fetchGroups', memberGroups);
             }
           }
         } catch (error) {
@@ -70,6 +70,23 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (userId && this.userSocketMap.get(userId) === client.id) {
       this.userSocketMap.delete(userId);
+    }
+  }
+
+
+  emitToUsers(userIds: string[], event: string, data: any) {
+    for (const userId of userIds) {
+      const socketId = this.userSocketMap.get(userId);
+      if (socketId) {
+        const client = this.server.sockets.sockets.get(socketId);
+        if (client?.connected) {
+          client.emit(event, data);
+        } else {
+          this.logger.warn(`Socket ${socketId} for user ${userId} not connected`);
+        }
+      } else {
+        this.logger.warn(`No socket found for user ${userId}`);
+      }
     }
   }
 }

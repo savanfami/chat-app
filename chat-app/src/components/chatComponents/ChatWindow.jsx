@@ -17,7 +17,6 @@ const ChatWindow = ({ groupId }) => {
   const inputRef = useRef(null);
   const editInputRef = useRef(null);
   const token = localStorage.getItem("token");
-
   let currentUser = "";
   if (token) {
     const decoded = jwtDecode(token);
@@ -105,6 +104,7 @@ const ChatWindow = ({ groupId }) => {
     if (!groupId) return;
     try {
       const response = await axiosInstance.get(`/messages/${groupId}`);
+      console.log(response, "response");
       const formatted = response.data.map((msg) => ({
         id: msg._id,
         sender: msg.sender.email,
@@ -118,8 +118,11 @@ const ChatWindow = ({ groupId }) => {
         image: msg.mediaUrl, // Keep for backward compatibility
         mediaUrl: msg.mediaUrl, // Add mediaUrl field
         isEdited: msg.isEdited || false,
+        groupName: msg.groupId.name,
       }));
       setMessages(formatted);
+      console.log(formatted[0].groupName, "groupppppppName");
+      console.log(formatted, "formattteed");
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -332,7 +335,8 @@ const ChatWindow = ({ groupId }) => {
               G
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900"> Chat</h2>
+              <h2 className="font-semibold text-gray-900">Group
+              </h2>
             </div>
           </div>
         </div>
@@ -490,7 +494,7 @@ const ChatWindow = ({ groupId }) => {
                       className="w-40 h-40 object-cover rounded-lg border border-gray-300 shadow-sm"
                       muted
                     />
-              
+
                     {/* Delete button overlay on video */}
                     <button
                       onClick={handleRemoveFile}

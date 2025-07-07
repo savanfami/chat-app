@@ -21,7 +21,7 @@ export class ChatService {
 
     async getMessagesForGroup(groupId: string) {
         return this.messageModel.find({ groupId })
-            .sort({ createdAt: 1 }).populate('sender')
+            .sort({ createdAt: 1 }).populate('sender').populate('groupId'); 
     }
 
     async editMessage(msgId:string, content:any) {

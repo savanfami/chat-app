@@ -7,14 +7,11 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
-
   const socket = useGlobalSocket();
-
 
   const fetchUserGroups = async () => {
     try {
       const response = await axiosInstance.get("/groups/my-groups");
-      console.log(response.data,'datadatadat')
       setGroups(response.data);
     } catch (error) {
       console.error("Failed to fetch groups:", error);
@@ -25,31 +22,54 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     fetchUserGroups();
   }, [groupCreatedTrigger]);
 
-useEffect(() => {
-  if (!socket) return;
+  useEffect(() => {
+    if (!socket) return;
 
-  const handleGroupUpdate = (groups) => {
-    // console.log("📥 Groups received via fetchGroups:", groups);
-    setGroups(groups);
-  };
+    const handleGroupUpdate = (groups) => {
+      // console.log("📥 Groups received via fetchGroups:", groups);
+      setGroups(groups);
+    };
 
-  const handleNewGroup = (newGroup) => {
-    // console.log("📥 groupCreated event received:", newGroup);
-    fetchUserGroups(); 
-  };
+    const handleLatestMessage = (data) => {
+      console.log("Received latestMessageUpdate", data);
 
-  socket.on("fetchGroups", handleGroupUpdate);
-  socket.on("groupCreated", handleNewGroup);
+      setGroups((prevGroups) => {
+        const updatedGroups = prevGroups.map((group) =>
+          group._id === data.groupId
+            ? { ...group, lastMessage: data.lastMessage }
+            : group
+        );
 
-  socket.emit("getGroups"); 
+        // Sort based on latest timestamp
+        updatedGroups.sort((a, b) => {
+          const aTime = new Date(a.lastMessage?.timestamp || 0).getTime();
+          const bTime = new Date(b.lastMessage?.timestamp || 0).getTime();
+          return bTime - aTime;
+        });
 
-  return () => {
-    socket.off("fetchGroups", handleGroupUpdate);
-    socket.off("groupCreated", handleNewGroup);
-  };
-}, [socket]);
+        return [...updatedGroups];
+      });
+    };
 
+    const handleNewGroup = (newGroup) => {
+      // console.log("📥 groupCreated event received:", newGroup);
+      fetchUserGroups();
+    };
 
+    socket.on("fetchGroups", handleGroupUpdate);
+    socket.on("latestMessageUpdate", handleLatestMessage);
+
+    socket.on("groupCreated", handleNewGroup);
+
+    socket.emit("getGroups");
+
+    return () => {
+      socket.off("fetchGroups", handleGroupUpdate);
+      socket.off("latestMessageUpdate", handleLatestMessage);
+
+      socket.off("groupCreated", handleNewGroup);
+    };
+  }, [socket]);
 
   const handleSelectGroup = (groupId) => {
     setSelectedGroupId(groupId);

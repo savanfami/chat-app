@@ -6,6 +6,6 @@ GlobalGateway
 @Module({
     imports:[GroupModule,AuthModule],
     providers:[GlobalGateway],
-    exports:[]
+    exports:[GlobalGateway]
 })
 export class GlobalModule {}

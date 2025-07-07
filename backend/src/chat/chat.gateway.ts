@@ -11,6 +11,9 @@ import { Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthService } from 'src/auth/auth.service';
+import { GlobalModule } from 'src/global/global.module';
+import { GlobalGateway } from 'src/global/global.gateway';
+import { GroupService } from 'src/group/group.service';
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
@@ -31,6 +34,8 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   constructor(
     private readonly chatService: ChatService,
     private readonly userService: AuthService,
+    private readonly globalGateway: GlobalGateway,
+    private readonly groupService:GroupService
 
   ) { }
   afterInit(server: SocketIOServer) {
@@ -50,7 +55,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       try {
         const savedMessage = await this.chatService.createMessage(data);
         const userInfo = await this.userService.getUserInfo(sender);
-        // console.log(savedMessage, 'savedMessage')//exclude password not done
         const messageWithUserInfo = {
           id: savedMessage._id,
           groupId,
@@ -64,6 +68,19 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           image: data.mediaUrl
         };
         client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
+
+        const memberIds = await this.groupService.getGroupMemberIds(groupId);
+
+        const lastMessageData = {
+          groupId,
+          lastMessage: {
+            content,
+            sender: userInfo,
+            timestamp: savedMessage.createdAt,
+          },
+        };
+
+        this.globalGateway.emitToUsers(memberIds, 'latestMessageUpdate', lastMessageData);
       } catch (err) {
         this.logger.error('Failed to save or emit message:', err);
       }
@@ -73,7 +90,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     client.on('editMsg', async (data) => {
       const { content, messageId, groupId } = data
       const editedmsg = await this.chatService.editMessage(messageId, content)
-      client.nsp.to(groupId).emit('editmsgrecieve',editedmsg)
+      client.nsp.to(groupId).emit('editmsgrecieve', editedmsg)
     })
 
   }
