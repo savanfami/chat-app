@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
+import { useGlobalSocket } from "../../context/socketContext";
 
 const GroupCreateModal = ({ onClose, onGroupCreated }) => {
   const [groupName, setGroupName] = useState("");
@@ -7,6 +8,7 @@ const GroupCreateModal = ({ onClose, onGroupCreated }) => {
   const [allUsers, setAllUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const socket = useGlobalSocket();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -21,26 +23,64 @@ const GroupCreateModal = ({ onClose, onGroupCreated }) => {
     fetchUsers();
   }, []);
 
-  const handleCreateGroup = async () => {
-    if (!groupName.trim()) return;
+  // useEffect(() => {
+  //   if (!socket) return;
 
-    setIsLoading(true);
+  //   socket.on("fetchGroups", (data) => {
+  //     console.log("📥 Received groups:", data);
+  //     setGroups(data);
+  //   });
 
-    try {
-      const response = await axiosInstance.post("/groups", {
-        name: groupName,
-        members: members,
-      });
-      console.log("Group Created:", response.data);
-      onGroupCreated();
-      onClose();
-    } catch (err) {
-      console.error("Error creating group:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   socket.emit("createGroup",);
 
+  //   return () => {
+  //     socket.off("fetchGroups");
+  //   };
+  // }, [socket]);
+
+  // const handleCreateGroup = async () => {
+  //   if (!groupName.trim()) return;
+
+  //   setIsLoading(true);
+
+  //   try {
+  //     const response = await axiosInstance.post("/groups", {
+  //       name: groupName,
+  //       members: members,
+  //     });
+  //     console.log("Group Created:", response.data);
+  //     onGroupCreated();
+  //     onClose();
+  //   } catch (err) {
+  //     console.error("Error creating group:", err);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
+  
+  
+  const handleCreateGroup = () => {
+  if (!groupName.trim()) return;
+
+  setIsLoading(true);
+
+  if (socket) {
+    socket.emit("createGroup", {
+      name: groupName,
+      members,
+    });
+
+    // Let Sidebar or other components update based on 'fetchGroups' event
+    onGroupCreated(); // optional callback to trigger parent re-render
+    onClose();         // close the modal
+  }
+
+  setIsLoading(false);
+};
+
+  
+  
   const toggleMember = (userId) => {
     setMembers((prev) =>
       prev.includes(userId)

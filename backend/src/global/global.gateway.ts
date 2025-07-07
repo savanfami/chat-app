@@ -1,8 +1,8 @@
 import {
-    OnGatewayConnection,
-    OnGatewayDisconnect,
-    WebSocketGateway,
-    WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
@@ -10,51 +10,66 @@ import { GroupService } from 'src/group/group.service';
 import * as Jwt from 'jsonwebtoken';
 
 @WebSocketGateway({
-    cors: {
-        origin: 'http://localhost:5173',
-        methods: ['GET', 'POST'],
-        credentials: true,
-    },
+  cors: {
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
 })
 export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
-    @WebSocketServer()
-    server: Server;
+  @WebSocketServer()
+  server: Server;
 
-    private readonly logger = new Logger(GlobalGateway.name);
-    constructor(
-  private readonly groupService: GroupService
-) {}
-    afterInit(server: Server) {
-        console.log('WebSocket Gateway initialized');
-    }
+  private readonly logger = new Logger(GlobalGateway.name);
+  private userSocketMap = new Map<string, string>();
 
-    handleConnection(client: Socket) {
-        console.log(`Global client connected: ${client.id}`);
+  constructor(private readonly groupService: GroupService) {}
 
-         const token = client.handshake?.auth?.token
-        const decoded = Jwt.verify(token,'@@@@@@jsshfds%^^^***9');
- 
+  afterInit(server: Server) {
+  }
 
-        client.on('createGroup', async (data) => {
-            try {
-                const { name, members } = data
-                console.log(name,members)
-                const userId = (decoded as Jwt.JwtPayload).userId as string;
-                const groupdata = await this.groupService.createGroup(name, userId, members)
-                // client.emit('groupcreated', groupdata) 
-                const fetchGroups = await this.groupService.getUserGroups(userId)
-                client.emit('fetchGroups', fetchGroups)
-            } catch (error) {
-                console.log(error, 'error')
- 
+  handleConnection(client: Socket) {
+    console.log(`global user connected ${client.id}`);
+
+    try {
+      const token = client.handshake?.auth?.token;
+      const decoded = Jwt.verify(token, '@@@@@@jsshfds%^^^***9');
+      const userId = (decoded as Jwt.JwtPayload).userId as string;
+
+      this.userSocketMap.set(userId, client.id);
+
+      client.data.userId = userId;
+
+      client.on('createGroup', async (data) => {
+        try {
+          const { name, members } = data;
+          const newGroup = await this.groupService.createGroup(name, userId, members);
+          const groupMemberIds = [...members, userId];
+          for (const memberId of groupMemberIds) {
+            const socketId = this.userSocketMap.get(memberId);
+            if (socketId) {
+              this.server.to(socketId).emit('groupCreated', newGroup);
+            //   Optional: Emit updated groups list to each member
+            //   const memberGroups = await this.groupService.getUserGroups(memberId);
+            //   this.server.to(socketId).emit('fetchGroups', memberGroups);
             }
-        })
+          }
+        } catch (error) {
+          console.error('Error creating group:', error);
+        }
+      });
+    } catch (err) {
+      console.log('Invalid JWT token in handshake', err);
+      client.disconnect(true);
     }
+  }
 
-    handleDisconnect(client: Socket) {
-        console.log(`Global client disconnected: ${client.id}`);
+  handleDisconnect(client: Socket) {
+    console.log(`global user disconnected: ${client.id}`);
+    const userId = client.data?.userId;
+
+    if (userId && this.userSocketMap.get(userId) === client.id) {
+      this.userSocketMap.delete(userId);
     }
+  }
 }
-
-
-

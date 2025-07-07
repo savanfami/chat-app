@@ -1,17 +1,20 @@
 import axios from "axios";
 import React, { useEffect, useState, useRef } from "react";
 import { axiosInstance } from "../../../constants/axiosInstance";
+import { useGlobalSocket } from "../../context/socketContext";
 
 const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
 
 
+  const socket = useGlobalSocket();
 
 
   const fetchUserGroups = async () => {
     try {
       const response = await axiosInstance.get("/groups/my-groups");
+      console.log(response.data,'datadatadat')
       setGroups(response.data);
     } catch (error) {
       console.error("Failed to fetch groups:", error);
@@ -21,6 +24,32 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   useEffect(() => {
     fetchUserGroups();
   }, [groupCreatedTrigger]);
+
+useEffect(() => {
+  if (!socket) return;
+
+  const handleGroupUpdate = (groups) => {
+    // console.log("📥 Groups received via fetchGroups:", groups);
+    setGroups(groups);
+  };
+
+  const handleNewGroup = (newGroup) => {
+    // console.log("📥 groupCreated event received:", newGroup);
+    fetchUserGroups(); 
+  };
+
+  socket.on("fetchGroups", handleGroupUpdate);
+  socket.on("groupCreated", handleNewGroup);
+
+  socket.emit("getGroups"); 
+
+  return () => {
+    socket.off("fetchGroups", handleGroupUpdate);
+    socket.off("groupCreated", handleNewGroup);
+  };
+}, [socket]);
+
+
 
   const handleSelectGroup = (groupId) => {
     setSelectedGroupId(groupId);
