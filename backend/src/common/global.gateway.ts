@@ -88,10 +88,10 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (client?.connected) {
           client.emit(event, data);
         } else {
-          console.log(`Socket ${socketId} for user ${userId} not connected`);
+          // console.log(`Socket ${socketId} for user ${userId} not connected`);
         }
       } else {
-        console.log(`No socket found for user ${userId}`);
+        // console.log(`No socket found for user ${userId}`);
       }
     }
   }

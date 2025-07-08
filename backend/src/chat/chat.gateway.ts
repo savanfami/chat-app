@@ -11,7 +11,7 @@ import { Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthService } from 'src/auth/auth.service';
-import { GlobalGateway } from 'src/global/global.gateway';
+import { GlobalGateway } from 'src/common/global.gateway';
 import { GroupService } from 'src/group/group.service';
 
 @WebSocketGateway({

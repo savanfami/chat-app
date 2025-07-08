@@ -11,9 +11,8 @@ export class SocketStateService {
     this.userSocketMap.set(userId, socketId);
   }
 
-getUserSocket(userId) {
+getUserSocket(userId:string) {
   const idStr = userId.toString(); 
-  console.log(idStr, 'userId (as string)');
   console.log(this.userSocketMap);
   return this.userSocketMap.get(idStr);
 }

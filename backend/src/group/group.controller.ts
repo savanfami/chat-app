@@ -13,7 +13,8 @@ export class GroupController {
     }
     @UseGuards(AuthGuard)
     @Get('my-groups')
-    async getGroups(@Req() req) {
+    async getGroups(@Req() req) { 
         return this.groupService.getUserGroups(req.user.userId);
     }
 }
+ 
