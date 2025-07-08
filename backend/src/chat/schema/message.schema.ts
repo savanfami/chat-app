@@ -12,8 +12,8 @@ export class Message extends Document {
     @Prop()
     content: string;
 
-    // @Prop()
-    // edited: boolean;
+    @Prop()
+    edited: boolean;
 
     @Prop()
     mediaUrl?: string;

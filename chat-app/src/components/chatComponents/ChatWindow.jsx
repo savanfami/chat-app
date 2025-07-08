@@ -23,7 +23,6 @@ const ChatWindow = ({ groupId }) => {
     currentUser = decoded.userId;
   }
 
-  // Function to get file type
   const getFileType = (file) => {
     if (!file) return null;
     if (file.type.startsWith("image/")) return "image";
@@ -31,7 +30,6 @@ const ChatWindow = ({ groupId }) => {
     return "file";
   };
 
-  // Function to get media type from URL
   const getMediaTypeFromUrl = (url) => {
     if (!url) return null;
     const extension = url.split(".").pop().toLowerCase();
@@ -43,7 +41,6 @@ const ChatWindow = ({ groupId }) => {
     return "file";
   };
 
-  // Function to create file preview
   const createFilePreview = (file) => {
     const fileType = getFileType(file);
     if (fileType === "image" || fileType === "video/mp4") {
@@ -56,9 +53,9 @@ const ChatWindow = ({ groupId }) => {
     }
   };
 
-  // Memoize the callback functions
   const handleMessageReceived = useCallback(
     (msg) => {
+      console.log(msg,'msg ddd')
       const formattedMsg = {
         id: msg.id,
         sender: msg.sender.email,
@@ -67,8 +64,8 @@ const ChatWindow = ({ groupId }) => {
         timestamp: msg.timestamp,
         isCurrentUser: msg.sender._id === currentUser,
         image: msg.image,
-        mediaUrl: msg.mediaUrl, // Make sure to include mediaUrl
-        isEdited: msg.isEdited || false,
+        mediaUrl: msg.mediaUrl, 
+        isEdited: msg.edited || false,
       };
 
       setMessages((prev) => [...prev, formattedMsg]);
@@ -78,7 +75,6 @@ const ChatWindow = ({ groupId }) => {
 
   const handleMessageEdited = useCallback((updatedMsg) => {
     console.log("Received edited message:", updatedMsg);
-    // Handle message edit response
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === updatedMsg._id || msg.id === updatedMsg.id
@@ -104,7 +100,7 @@ const ChatWindow = ({ groupId }) => {
     if (!groupId) return;
     try {
       const response = await axiosInstance.get(`/messages/${groupId}`);
-      console.log(response, "response");
+      // console.log(response, "response");
       const formatted = response.data.map((msg) => ({
         id: msg._id,
         sender: msg.sender.email,
@@ -115,14 +111,14 @@ const ChatWindow = ({ groupId }) => {
           minute: "2-digit",
         }),
         isCurrentUser: msg.sender._id === currentUser,
-        image: msg.mediaUrl, // Keep for backward compatibility
-        mediaUrl: msg.mediaUrl, // Add mediaUrl field
-        isEdited: msg.isEdited || false,
-        groupName: msg.groupId.name,
+        image: msg.mediaUrl, 
+        mediaUrl: msg.mediaUrl, 
+        isEdited: msg.edited || false,
+        // groupName: msg.groupId.name,
       }));
       setMessages(formatted);
-      console.log(formatted[0].groupName, "groupppppppName");
-      console.log(formatted, "formattteed");
+      // console.log(formatted[0].groupName, "groupppppppName");
+      // console.log(formatted, "formattteed");
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -247,7 +243,6 @@ const ChatWindow = ({ groupId }) => {
     }
     setFile(null);
     setFilePreview(null);
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -261,7 +256,6 @@ const ChatWindow = ({ groupId }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // Function to render media content in messages
   const renderMediaContent = (mediaUrl) => {
     if (!mediaUrl) return null;
 
@@ -377,7 +371,6 @@ const ChatWindow = ({ groupId }) => {
                     </div>
                   )}
 
-                  {/* Edit button for current user's messages */}
                   {msg.isCurrentUser && msg.text && (
                     <button
                       onClick={() => handleEdit(msg)}
@@ -495,7 +488,6 @@ const ChatWindow = ({ groupId }) => {
                       muted
                     />
 
-                    {/* Delete button overlay on video */}
                     <button
                       onClick={handleRemoveFile}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors duration-200"
@@ -533,7 +525,6 @@ const ChatWindow = ({ groupId }) => {
                         />
                       </svg>
                     </div>
-                    {/* Delete button for other files */}
                     <button
                       onClick={handleRemoveFile}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors duration-200"
@@ -557,7 +548,6 @@ const ChatWindow = ({ groupId }) => {
                 )}
               </div>
 
-              {/* File Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col">
                   <p className="text-sm font-medium text-gray-900 truncate">
@@ -614,7 +604,6 @@ const ChatWindow = ({ groupId }) => {
         )}
 
         <div className="flex items-end gap-3">
-          {/* File Input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -623,7 +612,6 @@ const ChatWindow = ({ groupId }) => {
             onChange={handleFileChange}
           />
 
-          {/* Attachment Button */}
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 flex-shrink-0"

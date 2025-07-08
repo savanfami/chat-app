@@ -12,6 +12,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const fetchUserGroups = async () => {
     try {
       const response = await axiosInstance.get("/groups/my-groups");
+      console.log(response,'responsee from fetch group')
       setGroups(response.data);
     } catch (error) {
       console.error("Failed to fetch groups:", error);
@@ -26,7 +27,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     if (!socket) return;
 
     const handleGroupUpdate = (groups) => {
-      // console.log("📥 Groups received via fetchGroups:", groups);
+      // console.log(" Groups received via fetchGroups:", groups);
       setGroups(groups);
     };
 
@@ -40,7 +41,6 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
             : group
         );
 
-        // Sort based on latest timestamp
         updatedGroups.sort((a, b) => {
           const aTime = new Date(a.lastMessage?.timestamp || 0).getTime();
           const bTime = new Date(b.lastMessage?.timestamp || 0).getTime();
@@ -52,7 +52,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     };
 
     const handleNewGroup = (newGroup) => {
-      // console.log("📥 groupCreated event received:", newGroup);
+      // console.log(" groupCreated event received:", newGroup);
       fetchUserGroups();
     };
 

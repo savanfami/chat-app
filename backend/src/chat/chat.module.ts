@@ -7,7 +7,6 @@ import { AuthModule } from 'src/auth/auth.module';
 import { ChatGateway } from './chat.gateway';
 import { GroupModule } from 'src/group/group.module';
 import { GlobalModule } from 'src/global/global.module';
-// import { GlobalGateway } from 'src/global/global.gateway';
 
 @Module({
   imports: [

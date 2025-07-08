@@ -21,11 +21,20 @@ export class ChatService {
 
     async getMessagesForGroup(groupId: string) {
         return this.messageModel.find({ groupId })
-            .sort({ createdAt: 1 }).populate('sender').populate('groupId'); 
+            .sort({ createdAt: 1 }).populate('sender')
     }
 
-    async editMessage(msgId:string, content:any) {
-        return this.messageModel.findByIdAndUpdate(msgId, { $set: {content} }, { new: true })
+    async editMessage(msgId: string, content: any) {
+        return this.messageModel.findByIdAndUpdate(
+            msgId,
+            {
+                $set: {
+                    content,
+                    edited: true,
+                },
+            },
+            { new: true }
+        );
     }
 
 

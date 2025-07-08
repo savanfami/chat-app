@@ -11,7 +11,6 @@ import { Socket } from 'socket.io';
 import { Logger, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AuthService } from 'src/auth/auth.service';
-import { GlobalModule } from 'src/global/global.module';
 import { GlobalGateway } from 'src/global/global.gateway';
 import { GroupService } from 'src/group/group.service';
 
@@ -23,7 +22,6 @@ import { GroupService } from 'src/group/group.service';
     credentials: true,
   },
 })
-// @UseGuards(AuthGuard)
 
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
@@ -82,7 +80,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
         this.globalGateway.emitToUsers(memberIds, 'latestMessageUpdate', lastMessageData);
       } catch (err) {
-        this.logger.error('Failed to save or emit message:', err);
+        console.log('Failed to save or emit message:', err);
       }
     });
 

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { axiosInstance } from "../../constants/axiosInstance";
-import {useNavigate} from 'react-router'
+import { useNavigate } from "react-router";
 
 const SignUp = () => {
-  const navigate=useNavigate()
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -56,68 +57,76 @@ const SignUp = () => {
       try {
         const response = await axiosInstance.post("/auth/signup", formData);
         console.log("Signup successful:", response.data);
-         navigate('/login')
-       
+        navigate("/login");
       } catch (error) {
         console.error("Signup error:", error.response?.data || error.message);
-        // Show appropriate error to the user
       }
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleSignup}
-        className="bg-white p-8 rounded shadow-md w-full max-w-md"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-          SIGN UP HERE !!!
-        </h2>
-
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          className="w-full p-2 mb-1 border rounded"
-          value={formData.username}
-          onChange={handleChange}
+    <div className="flex h-screen">
+      <div className="w-1/2 bg-gray-200">
+        <img
+          src="https://www.figma.com/community/resource/b2999579-a1a0-4e50-90c1-89f8c4cbb79d/thumbnail"
+          alt="Design Thumbnail"
+          className="object-cover w-full h-full"
         />
-        {errors.username && (
-          <p className="text-red-500 text-sm mb-3">{errors.username}</p>
-        )}
+      </div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          className="w-full p-2 mb-1 border rounded"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        {errors.email && (
-          <p className="text-red-500 text-sm mb-3">{errors.email}</p>
-        )}
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          className="w-full p-2 mb-1 border rounded"
-          value={formData.password}
-          onChange={handleChange}
-        />
-        {errors.password && (
-          <p className="text-red-500 text-sm mb-3">{errors.password}</p>
-        )}
-
-        <button
-          type="submit"
-          className="w-full bg-blue-500 cursor-pointer text-white py-2 rounded  transition"
+      <div className="w-1/2 flex justify-center items-center bg-gray-900">
+        <form 
+          onSubmit={handleSignup}
+          className=" p-8 rounded shadow-md w-full max-w-md bg-gray-800"
         >
-          Signup
-        </button>
-      </form> 
+          <h2 className="text-2xl font-bold mb-6 text-center text-white uppercase">
+            SIGN UP HERE !!!
+          </h2>
+
+          <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            className="w-full p-2 mb-1 border rounded text-white"
+            value={formData.username}
+            onChange={handleChange}
+          />
+          {errors.username && (
+            <p className="text-red-500 text-sm mb-3">{errors.username}</p>
+          )}
+
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            className="w-full p-2 mb-1 border rounded  text-white"
+            value={formData.email}
+            onChange={handleChange}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-sm mb-3">{errors.email}</p>
+          )}
+
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            className="w-full p-2 mb-1 border rounded text-white"
+            value={formData.password}
+            onChange={handleChange}
+          />
+          {errors.password && (
+            <p className="text-red-500 text-sm mb-3">{errors.password}</p>
+          )}  
+
+          <button
+            type="submit"
+            className="w-full bg-blue-500 cursor-pointer text-white py-2 rounded  transition"
+          >
+            Signup
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

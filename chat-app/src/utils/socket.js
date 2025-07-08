@@ -18,7 +18,6 @@ export const getSocket = ()=> {
       autoConnect: true,
     });
 
-    // Add connection event listeners for debugging
     socket.on("connect", () => {
       console.log("Connected to server:", socket?.id);
     });
@@ -33,14 +32,12 @@ export const getSocket = ()=> {
 
     socket.on("authError", (error) => {
       console.error("Authentication error:", error);
-      // Handle auth error - maybe redirect to login
     });
   }
 
   return socket;
 };
 
-// Function to disconnect socket
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();

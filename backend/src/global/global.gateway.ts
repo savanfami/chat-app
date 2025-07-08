@@ -9,6 +9,7 @@ import { Server, Socket } from 'socket.io';
 import { GroupService } from 'src/group/group.service';
 import * as Jwt from 'jsonwebtoken';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 @WebSocketGateway({
@@ -25,10 +26,11 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GlobalGateway.name);
   private userSocketMap = new Map<string, string>();
 
-  constructor(private readonly groupService: GroupService) {}
+  constructor(private readonly groupService: GroupService,
+    private readonly configService: ConfigService
+  ) { }
 
   afterInit(server: Server) {
-    // Optional server init logic
   }
 
   handleConnection(client: Socket) {
@@ -36,7 +38,11 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       const token = client.handshake?.auth?.token;
-      const decoded = Jwt.verify(token, '@@@@@@jsshfds%^^^***9');
+      const jwtSecret = this.configService.get<string>('JWT_SECRET');
+      if (!jwtSecret) {
+        throw new Error('Jwt is not in env');
+      }
+      const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
 
       this.userSocketMap.set(userId, client.id);
@@ -82,10 +88,10 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (client?.connected) {
           client.emit(event, data);
         } else {
-          this.logger.warn(`Socket ${socketId} for user ${userId} not connected`);
+          console.log(`Socket ${socketId} for user ${userId} not connected`);
         }
       } else {
-        this.logger.warn(`No socket found for user ${userId}`);
+        console.log(`No socket found for user ${userId}`);
       }
     }
   }
