@@ -36,7 +36,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   afterInit(server: Server) {}
 
   handleConnection(client: Socket) {
-    this.logger.log(`global user connected ${client.id}`);
+    console.log(`global user connected ${client.id}`);
 
     try {
       const token = client.handshake?.auth?.token;
@@ -51,13 +51,13 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.userSocketMap.set(userId, client.id);
       client.data.userId = userId;
     } catch (err) {
-      this.logger.error('invalid jwt token ', err);
+      console.log('invalid jwt token ', err);
       client.disconnect(true);
     }
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`global user disconnected- ${client.id}`);
+    console.log(`global user disconnected- ${client.id}`);
     const userId = client.data?.userId;
 
     if (userId && this.userSocketMap.get(userId) === client.id) {
@@ -90,7 +90,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       }
     } catch (error) {
-      this.logger.error('Error creating group:', error);
+      console.log('Error creating group:', error);
       client.emit('error', 'Group creation failed');
     }
   }

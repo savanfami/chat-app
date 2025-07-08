@@ -55,7 +55,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     @ConnectedSocket() client: Socket,
   ) {
     client.join(roomId);
-    this.logger.log(`Client ${client.id} joined room ${roomId}`);
+    console.log(`Client ${client.id} joined room ${roomId}`);
   }
 
   @SubscribeMessage('sendmsg')
@@ -103,7 +103,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
       this.globalGateway.emitToUsers(memberIds, 'latestMessageUpdate', lastMessageData);
     } catch (err) {
-      this.logger.error('Failed to save or emit message:', err);
+      console.error('Failed to save or emit message:', err);
     }
   }
 
@@ -123,7 +123,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       const editedMsg = await this.chatService.editMessage(messageId, content);
       client.nsp.to(groupId).emit('editmsgrecieve', editedMsg);
     } catch (error) {
-      this.logger.error('Failed to edit message:', error);
+      console.error('Failed to edit message:', error);
     }
   }
 }
