@@ -3,12 +3,14 @@ import {
   OnGatewayDisconnect,
   WebSocketGateway,
   WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, Injectable } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { GroupService } from 'src/group/group.service';
 import * as Jwt from 'jsonwebtoken';
-import { Injectable } from '@nestjs/common';
+import { GroupService } from 'src/group/group.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -26,52 +28,36 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(GlobalGateway.name);
   private userSocketMap = new Map<string, string>();
 
-  constructor(private readonly groupService: GroupService,
-    private readonly configService: ConfigService
-  ) { }
+  constructor(
+    private readonly groupService: GroupService,
+    private readonly configService: ConfigService,
+  ) {}
 
-  afterInit(server: Server) {
-  }
+  afterInit(server: Server) {}
 
   handleConnection(client: Socket) {
-    console.log(`global user connected ${client.id}`);
+    this.logger.log(`global user connected ${client.id}`);
 
     try {
       const token = client.handshake?.auth?.token;
       const jwtSecret = this.configService.get<string>('JWT_SECRET');
       if (!jwtSecret) {
-        throw new Error('Jwt is not in env');
+        throw new Error('jwt secret is not defined in environment');
       }
+
       const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
 
       this.userSocketMap.set(userId, client.id);
       client.data.userId = userId;
-
-      client.on('createGroup', async (data) => {
-        try {
-          const { name, members } = data;
-          const newGroup = await this.groupService.createGroup(name, userId, members);
-          const groupMemberIds = [...members, userId];
-
-          for (const memberId of groupMemberIds) {
-            const socketId = this.userSocketMap.get(memberId);
-            if (socketId) {
-              this.server.to(socketId).emit('groupCreated', newGroup);
-            }
-          }
-        } catch (error) {
-          console.error('Error creating group:', error);
-        }
-      });
     } catch (err) {
-      console.log('Invalid JWT token in handshake', err);
+      this.logger.error('invalid jwt token ', err);
       client.disconnect(true);
     }
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`global user disconnected: ${client.id}`);
+    this.logger.log(`global user disconnected- ${client.id}`);
     const userId = client.data?.userId;
 
     if (userId && this.userSocketMap.get(userId) === client.id) {
@@ -80,6 +66,35 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
 
+
+  @SubscribeMessage('createGroup')
+  async handleCreateGroup(
+    @MessageBody() data: { name: string; members: string[] },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const userId = client.data?.userId;
+    if (!userId) {
+      client.emit('error', 'Unauthorized');
+      return;
+    }
+
+    try {
+      const { name, members } = data;
+      const newGroup = await this.groupService.createGroup(name, userId, members);
+      const groupMemberIds = [...members, userId];
+
+      for (const memberId of groupMemberIds) {
+        const socketId = this.userSocketMap.get(memberId);
+        if (socketId) {
+          this.server.to(socketId).emit('groupCreated', newGroup);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error creating group:', error);
+      client.emit('error', 'Group creation failed');
+    }
+  }
+
   emitToUsers(userIds: string[], event: string, data: any) {
     for (const userId of userIds) {
       const socketId = this.userSocketMap.get(userId);
@@ -87,11 +102,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const client = this.server.sockets.sockets.get(socketId);
         if (client?.connected) {
           client.emit(event, data);
-        } else {
-          // console.log(`Socket ${socketId} for user ${userId} not connected`);
         }
-      } else {
-        // console.log(`No socket found for user ${userId}`);
       }
     }
   }

@@ -1,14 +1,15 @@
-import { Server as SocketIOServer } from 'socket.io';
-import { AuthGuard } from 'src/auth/auth.guard';
 import {
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
   WebSocketGateway,
-  WebSocketServer
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayInit,
+  OnGatewayConnection,
+  OnGatewayDisconnect
 } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
-import { Logger, UseGuards } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { AuthService } from 'src/auth/auth.service';
 import { GlobalGateway } from 'src/common/global.gateway';
@@ -22,7 +23,6 @@ import { GroupService } from 'src/group/group.service';
     credentials: true,
   },
 })
-
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: SocketIOServer;
@@ -33,9 +33,9 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     private readonly chatService: ChatService,
     private readonly userService: AuthService,
     private readonly globalGateway: GlobalGateway,
-    private readonly groupService:GroupService
+    private readonly groupService: GroupService,
+  ) {}
 
-  ) { }
   afterInit(server: SocketIOServer) {
     this.server = server;
   }
@@ -43,61 +43,87 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   handleConnection(client: Socket) {
     const namespace = client.nsp;
     console.log(`Client connected to namespace: ${namespace.name}`);
-
-    client.on('joinRoom', (roomId: string) => {
-      client.join(roomId);
-    });
-
-    client.on('sendmsg', async (data) => {
-      const { groupId, content, sender } = data;
-      try {
-        const savedMessage = await this.chatService.createMessage(data);
-        const userInfo = await this.userService.getUserInfo(sender);
-        const messageWithUserInfo = {
-          id: savedMessage._id,
-          groupId,
-          content,
-          sender: userInfo,
-          timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          createdAt: savedMessage.createdAt,
-          image: data.mediaUrl
-        };
-        client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
-
-        const memberIds = await this.groupService.getGroupMemberIds(groupId);
-
-        const lastMessageData = {
-          groupId,
-          lastMessage: {
-            content,
-            sender: userInfo,
-            timestamp: savedMessage.createdAt,
-          },
-        };
-
-        this.globalGateway.emitToUsers(memberIds, 'latestMessageUpdate', lastMessageData);
-      } catch (err) {
-        console.log('Failed to save or emit message:', err);
-      }
-    });
-
-
-    client.on('editMsg', async (data) => {
-      const { content, messageId, groupId } = data
-      const editedmsg = await this.chatService.editMessage(messageId, content)
-      client.nsp.to(groupId).emit('editmsgrecieve', editedmsg)
-    })
-
   }
-
-
 
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected from ${client.nsp.name}`);
   }
 
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(
+    @MessageBody() roomId: string,
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.join(roomId);
+    this.logger.log(`Client ${client.id} joined room ${roomId}`);
+  }
 
+  @SubscribeMessage('sendmsg')
+  async handleSendMessage(
+    @MessageBody()
+    data: {
+      groupId: string;
+      content: string;
+      sender: string;
+      mediaUrl?: string;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { groupId, content, sender, mediaUrl } = data;
+
+    try {
+      const savedMessage = await this.chatService.createMessage(data);
+      const userInfo = await this.userService.getUserInfo(sender);
+
+      const messageWithUserInfo = {
+        id: savedMessage._id,
+        groupId,
+        content,
+        sender: userInfo,
+        timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        createdAt: savedMessage.createdAt,
+        image: mediaUrl,
+      };
+
+      client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
+
+      const memberIds = await this.groupService.getGroupMemberIds(groupId);
+
+      const lastMessageData = {
+        groupId,
+        lastMessage: {
+          content,
+          sender: userInfo,
+          timestamp: savedMessage.createdAt,
+        },
+      };
+
+      this.globalGateway.emitToUsers(memberIds, 'latestMessageUpdate', lastMessageData);
+    } catch (err) {
+      this.logger.error('Failed to save or emit message:', err);
+    }
+  }
+
+  @SubscribeMessage('editMsg')
+  async handleEditMessage(
+    @MessageBody()
+    data: {
+      content: string;
+      messageId: string;
+      groupId: string;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { content, messageId, groupId } = data;
+
+    try {
+      const editedMsg = await this.chatService.editMessage(messageId, content);
+      client.nsp.to(groupId).emit('editmsgrecieve', editedMsg);
+    } catch (error) {
+      this.logger.error('Failed to edit message:', error);
+    }
+  }
 }
