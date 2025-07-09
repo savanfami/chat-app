@@ -53,6 +53,8 @@ export class MessageConsumer extends WorkerHost {
       },
     };
 
+    
+
     this.globalGateway.emitToUsers(
       await this.groupService.getGroupMemberIds(groupId),
       'latestMessageUpdate',

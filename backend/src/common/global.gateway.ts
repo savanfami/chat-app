@@ -52,14 +52,13 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.join(userId);
       client.data.userId = userId;
     } catch (err) {
-      console.log('invalid jwt token ', err);
+      console.log('invalid jwt token ', err); 
       client.disconnect(true);
     }
   }
 
   handleDisconnect(client: Socket) {
     console.log(`global user disconnected- ${client.id}`);
-    const userId = client.data?.userId;
   }
 
   @SubscribeMessage('createGroup')
@@ -69,7 +68,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const userId = client.data?.userId;
     if (!userId) {
-      client.emit('error', 'Unauthorized');
+      console.log('no user id found in global gateway');
       return;
     }
 

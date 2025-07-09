@@ -73,47 +73,10 @@ export class ChatGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
-    // const { groupId, content, sender, mediaUrl } = data;
 
     try {
+      //sending to bullmq the data
       await this.messageService.queueMessage(data)
-      // const savedMessage = await this.chatService.createMessage(data);
-      // const userInfo = await this.userService.getUserInfo(sender);
-
-      // const messageWithUserInfo = {
-      //   id: savedMessage._id,
-      //   groupId,
-      //   content,
-      //   sender: userInfo,
-      //   timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
-      //     [],
-      //     {
-      //       hour: '2-digit',
-      //       minute: '2-digit',
-      //     },
-      //   ),
-      //   createdAt: savedMessage.createdAt,
-      //   image: mediaUrl,
-      // };
-
-      // client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
-
-      // const memberIds = await this.groupService.getGroupMemberIds(groupId);
-
-      // const lastMessageData = {
-      //   groupId,
-      //   lastMessage: {
-      //     content,
-      //     sender: userInfo,
-      //     timestamp: savedMessage.createdAt,
-      //   },
-      // };
-
-      // this.globalGateway.emitToUsers(
-      //   memberIds,
-      //   'latestMessageUpdate',
-      //   lastMessageData,
-      // );
     } catch (err) {
       console.error('Failed to save or emit message:', err);
     }
