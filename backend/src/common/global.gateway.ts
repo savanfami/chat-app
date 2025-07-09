@@ -12,6 +12,8 @@ import { Server, Socket } from 'socket.io';
 import * as Jwt from 'jsonwebtoken';
 import { GroupService } from 'src/group/group.service';
 import { ConfigService } from '@nestjs/config';
+import { NotificationService } from 'src/bullmq/queues/notification.queue';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 @WebSocketGateway({
@@ -32,11 +34,13 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly groupService: GroupService,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly authService: AuthService,
+    private readonly notificationService: NotificationService
+  ) { }
 
-  afterInit(server: Server) {}
+  afterInit(server: Server) { }
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     console.log(`global user connected ${client.id}`);
 
     try {
@@ -48,17 +52,68 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
-
+      console.log('userid',userId)
       client.join(userId);
       client.data.userId = userId;
+      client.join(userId)
+      const allMembers = await this.authService.getAllmembers()
+      const onlineUsers: any = []
+      for (const user of allMembers) {
+        const userId = user._id as any
+        const memberId = userId.toString()
+        console.log(memberId,'memberid')
+        if (memberId === userId) continue;
+        const sockets = await this.server.in(memberId).fetchSockets(); 
+        // console.log(sockets,'sockets')
+        // if (sockets.length > 0) {
+          // onlineUsers.push({
+          //   _id: memberId,
+          //   username: user.username,
+          // });
+
+          await this.notificationService.queueNotification({
+            targetUserId: memberId,
+            statusUserId: userId,
+            status: 'online',
+          });
+          // client.emit('onlineUsers', onlineUsers);
+
+        // }
+      }
+
     } catch (err) {
-      console.log('invalid jwt token ', err); 
+      console.log('invalid jwt token ', err);
       client.disconnect(true);
     }
   }
 
   handleDisconnect(client: Socket) {
     console.log(`global user disconnected- ${client.id}`);
+  //     const userId = client.data?.userId;
+  // if (!userId) return;
+
+  // setTimeout(async () => {
+  //   const sockets = await this.server.in(userId).fetchSockets();
+  //   if (sockets.length === 0) {
+  //     const allUsers = await this.userService.getAllUsers();
+
+  //     for (const user of allUsers) {
+  //       const memberId = user._id.toString();
+  //       if (memberId === userId) continue;
+
+  //       const sockets = await this.server.in(memberId).fetchSockets();
+  //       if (sockets.length > 0) {
+  //         await this.notificationService.queueUserStatusNotify({
+  //           targetUserId: memberId,
+  //           statusUserId: userId,
+  //           status: 'offline',
+  //         });
+  //       }
+  //     }
+
+  //     this.logger.log(`User ${userId} fully disconnected`);
+  //   }
+  // }, 1000);
   }
 
   @SubscribeMessage('createGroup')
@@ -91,8 +146,9 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   emitToUsers(userIds: string[], event: string, data: any) {
+    console.log(userIds,'emitting for logins',event,data)
     for (const userId of userIds) {
-      this.server.to(userId).emit(event, data); 
+      this.server.to(userId).emit(event, data);
     }
   }
 }

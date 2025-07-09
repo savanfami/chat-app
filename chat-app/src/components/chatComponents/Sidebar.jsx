@@ -12,7 +12,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const fetchUserGroups = async () => {
     try {
       const response = await axiosInstance.get("/groups/my-groups");
-      console.log(response,'responsee from fetch group')
+      console.log(response, "responsee from fetch group");
       setGroups(response.data);
     } catch (error) {
       console.error("Failed to fetch groups:", error);
@@ -51,11 +51,15 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
       });
     };
 
+    const handleUserStatus = (data) => {
+      console.log(data, "data from backenddsss");
+    };
+
     const handleNewGroup = (newGroup) => {
       // console.log(" groupCreated event received:", newGroup);
       fetchUserGroups();
     };
-
+    socket.on("user-status", handleUserStatus);
     socket.on("fetchGroups", handleGroupUpdate);
     socket.on("latestMessageUpdate", handleLatestMessage);
 
@@ -66,7 +70,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     return () => {
       socket.off("fetchGroups", handleGroupUpdate);
       socket.off("latestMessageUpdate", handleLatestMessage);
-
+      socket.off('user-status',handleUserStatus)
       socket.off("groupCreated", handleNewGroup);
     };
   }, [socket]);

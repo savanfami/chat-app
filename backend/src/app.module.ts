@@ -24,7 +24,7 @@ import { BullmqModule } from './bullmq/bullmq.module';
     AuthModule,
     GroupModule,
     ChatModule,
-    GlobalModule,
+    GlobalModule, 
     BullmqModule,
   ],
   controllers: [],

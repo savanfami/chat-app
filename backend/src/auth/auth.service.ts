@@ -63,8 +63,13 @@ export class AuthService {
         return this.userModel.find({ _id: { $ne: currentUserId } });
     }
 
-    async getUserInfo(userId: string): Promise<User|null> {
+    async getUserInfo(userId: string): Promise<User | null> {
         return this.userModel.findById(userId)
+    }
+
+
+    async getAllmembers(): Promise<User[]> {
+        return this.userModel.find().select('-password -email');
     }
 
 }

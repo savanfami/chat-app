@@ -6,6 +6,8 @@ import { GroupModule } from 'src/group/group.module';
 import { MessageService } from './queues/message.queue';
 import { MessageConsumer } from './consumers/message.consumer';
 import { GlobalModule } from 'src/common/global.module';
+import { NotificationService } from './queues/notification.queue';
+import { NotificationConsumer } from './consumers/notification.consumer';
 
 @Module({
   imports: [
@@ -17,7 +19,7 @@ import { GlobalModule } from 'src/common/global.module';
       },
     }),
     AuthModule,
-    GlobalModule,
+    forwardRef(() => GlobalModule),
     forwardRef(() => ChatModule),
     GroupModule,
     BullModule.registerQueue(
@@ -29,7 +31,7 @@ import { GlobalModule } from 'src/common/global.module';
       },
     ),
   ],
-  providers: [MessageService, MessageConsumer],
-  exports: [MessageService],
+  providers: [MessageService, MessageConsumer, NotificationService, NotificationConsumer],
+  exports: [MessageService, NotificationService],
 })
-export class BullmqModule {}
+export class BullmqModule { }
