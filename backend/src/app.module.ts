@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GroupModule } from './group/group.module';
 import { ChatModule } from './chat/chat.module';
 import { GlobalModule } from './common/global.module';
+import { BullModule } from '@nestjs/bullmq';
+import { BullmqModule } from './bullmq/bullmq.module';
 
 @Module({
   imports: [
@@ -18,12 +20,12 @@ import { GlobalModule } from './common/global.module';
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGO_URI'),
       }),
-    }), 
-  
+    }),
     AuthModule,
     GroupModule,
     ChatModule,
     GlobalModule,
+    BullmqModule,
   ],
   controllers: [],
   providers: [],

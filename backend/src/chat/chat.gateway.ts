@@ -6,7 +6,7 @@ import {
   ConnectedSocket,
   OnGatewayInit,
   OnGatewayConnection,
-  OnGatewayDisconnect
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server as SocketIOServer, Socket } from 'socket.io';
@@ -23,7 +23,9 @@ import { GroupService } from 'src/group/group.service';
     credentials: true,
   },
 })
-export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: SocketIOServer;
 
@@ -80,10 +82,13 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         groupId,
         content,
         sender: userInfo,
-        timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+        timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
+          [],
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+          },
+        ),
         createdAt: savedMessage.createdAt,
         image: mediaUrl,
       };
@@ -101,7 +106,11 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         },
       };
 
-      this.globalGateway.emitToUsers(memberIds, 'latestMessageUpdate', lastMessageData);
+      this.globalGateway.emitToUsers(
+        memberIds,
+        'latestMessageUpdate',
+        lastMessageData,
+      );
     } catch (err) {
       console.error('Failed to save or emit message:', err);
     }
