@@ -21,12 +21,13 @@ import { ConfigService } from '@nestjs/config';
     credentials: true,
   },
 })
+
+
 export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(GlobalGateway.name);
-  private userSocketMap = new Map<string, string>();
 
   constructor(
     private readonly groupService: GroupService,
@@ -48,7 +49,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
 
-      this.userSocketMap.set(userId, client.id);
+      client.join(userId);
       client.data.userId = userId;
     } catch (err) {
       console.log('invalid jwt token ', err);
@@ -59,13 +60,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleDisconnect(client: Socket) {
     console.log(`global user disconnected- ${client.id}`);
     const userId = client.data?.userId;
-
-    if (userId && this.userSocketMap.get(userId) === client.id) {
-      this.userSocketMap.delete(userId);
-    }
   }
-
-
 
   @SubscribeMessage('createGroup')
   async handleCreateGroup(
@@ -80,14 +75,15 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       const { name, members } = data;
-      const newGroup = await this.groupService.createGroup(name, userId, members);
+      const newGroup = await this.groupService.createGroup(
+        name,
+        userId,
+        members,
+      );
       const groupMemberIds = [...members, userId];
 
       for (const memberId of groupMemberIds) {
-        const socketId = this.userSocketMap.get(memberId);
-        if (socketId) {
-          this.server.to(socketId).emit('groupCreated', newGroup);
-        }
+        this.server.to(memberId).emit('groupCreated', newGroup);
       }
     } catch (error) {
       console.log('Error creating group:', error);
@@ -97,13 +93,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   emitToUsers(userIds: string[], event: string, data: any) {
     for (const userId of userIds) {
-      const socketId = this.userSocketMap.get(userId);
-      if (socketId) {
-        const client = this.server.sockets.sockets.get(socketId);
-        if (client?.connected) {
-          client.emit(event, data);
-        }
-      }
+      this.server.to(userId).emit(event, data); 
     }
   }
 }
