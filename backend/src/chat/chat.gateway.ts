@@ -11,9 +11,10 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
-import { AuthService } from 'src/auth/auth.service';
-import { GlobalGateway } from 'src/common/global.gateway';
-import { GroupService } from 'src/group/group.service';
+import { MessageService } from 'src/bullmq/queues/message.queue';
+// import { AuthService } from 'src/auth/auth.service';
+// import { GlobalGateway } from 'src/common/global.gateway';
+// import { GroupService } from 'src/group/group.service';
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
@@ -33,9 +34,10 @@ export class ChatGateway
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly userService: AuthService,
-    private readonly globalGateway: GlobalGateway,
-    private readonly groupService: GroupService,
+    private readonly messageService:MessageService
+    // private readonly userService: AuthService,
+    // private readonly globalGateway: GlobalGateway,
+    // private readonly groupService: GroupService,
   ) {}
 
   afterInit(server: SocketIOServer) {
@@ -71,46 +73,47 @@ export class ChatGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
-    const { groupId, content, sender, mediaUrl } = data;
+    // const { groupId, content, sender, mediaUrl } = data;
 
     try {
-      const savedMessage = await this.chatService.createMessage(data);
-      const userInfo = await this.userService.getUserInfo(sender);
+      await this.messageService.queueMessage(data)
+      // const savedMessage = await this.chatService.createMessage(data);
+      // const userInfo = await this.userService.getUserInfo(sender);
 
-      const messageWithUserInfo = {
-        id: savedMessage._id,
-        groupId,
-        content,
-        sender: userInfo,
-        timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
-          [],
-          {
-            hour: '2-digit',
-            minute: '2-digit',
-          },
-        ),
-        createdAt: savedMessage.createdAt,
-        image: mediaUrl,
-      };
+      // const messageWithUserInfo = {
+      //   id: savedMessage._id,
+      //   groupId,
+      //   content,
+      //   sender: userInfo,
+      //   timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
+      //     [],
+      //     {
+      //       hour: '2-digit',
+      //       minute: '2-digit',
+      //     },
+      //   ),
+      //   createdAt: savedMessage.createdAt,
+      //   image: mediaUrl,
+      // };
 
-      client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
+      // client.nsp.to(groupId).emit('msgreceive', messageWithUserInfo);
 
-      const memberIds = await this.groupService.getGroupMemberIds(groupId);
+      // const memberIds = await this.groupService.getGroupMemberIds(groupId);
 
-      const lastMessageData = {
-        groupId,
-        lastMessage: {
-          content,
-          sender: userInfo,
-          timestamp: savedMessage.createdAt,
-        },
-      };
+      // const lastMessageData = {
+      //   groupId,
+      //   lastMessage: {
+      //     content,
+      //     sender: userInfo,
+      //     timestamp: savedMessage.createdAt,
+      //   },
+      // };
 
-      this.globalGateway.emitToUsers(
-        memberIds,
-        'latestMessageUpdate',
-        lastMessageData,
-      );
+      // this.globalGateway.emitToUsers(
+      //   memberIds,
+      //   'latestMessageUpdate',
+      //   lastMessageData,
+      // );
     } catch (err) {
       console.error('Failed to save or emit message:', err);
     }

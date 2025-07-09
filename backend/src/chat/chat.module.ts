@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -15,9 +15,10 @@ import { BullmqModule } from 'src/bullmq/bullmq.module';
     AuthModule,
     GroupModule,
     GlobalModule,
-    BullmqModule
+    forwardRef(() => BullmqModule),
   ],
   controllers: [ChatController],
-  providers: [ChatService,ChatGateway]
+  providers: [ChatService, ChatGateway],
+  exports: [ChatService,ChatGateway],
 })
 export class ChatModule {}
