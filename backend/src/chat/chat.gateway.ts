@@ -23,7 +23,7 @@ import { MessageService } from 'src/bullmq/queues/message.queue';
   },
 })
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect 
 {
   @WebSocketServer()
   server: SocketIOServer;

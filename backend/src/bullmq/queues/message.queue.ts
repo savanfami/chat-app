@@ -13,4 +13,22 @@ export class MessageService {
       backoff: 1000,
     });
   }
+
+  async updateMessageDelivery(userId: string) {
+    console.log('Queuing delivery update for user id:', userId);
+    await this.messageQueue.add('update-delivered', userId, {
+      attempts: 3,
+      removeOnComplete: true,
+      backoff: 1000,
+    });
+  }
+
+  async updateMessageSeen(userId: string) {
+    console.log('Queuing seen update for user id:', userId);
+    await this.messageQueue.add('update-seen', userId, {
+      attempts: 3,
+      removeOnComplete: true,
+      backoff: 1000,
+    });
+  }
 }

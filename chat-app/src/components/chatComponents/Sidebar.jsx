@@ -38,7 +38,6 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     }, 4000);
   };
 
-  // Function to show online users notification
   const showOnlineUsersNotification = (users) => {
     const notification = {
       id: Date.now(),
@@ -49,13 +48,11 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
 
     setNotifications((prev) => [...prev, notification]);
 
-    // Auto remove notification after 5 seconds
     setTimeout(() => {
       setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
     }, 5000);
   };
 
-  // Function to manually remove notification
   const removeNotification = (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
@@ -104,7 +101,6 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     };
 
     const handleOnlineUsersList = (data) => {
-      console.log(data, 'handle online users list');
       setOnlineUsers(data);
       
       // Show notification for online users
@@ -159,21 +155,21 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
                 w-3 h-3 rounded-full flex-shrink-0
                 ${
                   notification.type === 'online-users'
-                    ? "bg-blue-500"
+                    ? "bg-green-700"
                     : notification.status === "online"
                     ? "bg-green-500"
                     : "bg-red-500"
                 }
               `}
-            />
+            /> 
 
             <div className="flex-1 min-w-0">
               {notification.type === 'online-users' ? (
-                <div>
-                  <p className="text-sm font-medium text-blue-700">
+                <div> 
+                  <p className="text-sm font-medium text-green-700">
                     Online Users ({notification.users.length})
                   </p>
-                  <div className="text-xs text-blue-600 mt-1">
+                  <div className="text-xs text-green-700 mt-1">
                     {notification.users.map((user, index) => (
                       <span key={user.userId}>
                         {user.username}

@@ -15,6 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationService } from 'src/bullmq/queues/notification.queue';
 import { AuthService } from 'src/auth/auth.service';
 import { RedisService } from 'src/redis/redis.service';
+import { MessageService } from 'src/bullmq/queues/message.queue';
 
 @Injectable()
 @WebSocketGateway({
@@ -35,6 +36,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
     private readonly notificationService: NotificationService,
+    private readonly messageService:MessageService,
     private readonly redisService: RedisService,
   ) {}
 
@@ -54,6 +56,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const userId = (decoded as Jwt.JwtPayload).userId as string;
       client.join(userId);
       client.data.userId = userId;
+      await this.messageService.updateMessageDelivery(userId)
       const userInfo = await this.authService.getUserInfo(userId);
       await this.redisService.setUserOnline(
         userId,

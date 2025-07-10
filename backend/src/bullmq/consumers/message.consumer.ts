@@ -15,52 +15,110 @@ export class MessageConsumer extends WorkerHost {
     private readonly globalGateway: GlobalGateway,
     private readonly userService: AuthService,
     private readonly groupService: GroupService,
-    private readonly chatGateway:ChatGateway
+    private readonly chatGateway: ChatGateway,
   ) {
     super();
   }
 
   async process(job: Job<any>): Promise<any> {
+    switch (job.name) {
+      case 'send-message':
+        return this.handleSendMessage(job);
+      case 'update-delivered':
+        return this.handleUpdateDelivered(job);
+      case 'update-seen':
+        return this.handleUpdateSeen(job);
+      default:
+        throw new Error(`Unknown job type: ${job.name}`);
+    }
+  }
+
+  private async handleSendMessage(job: Job<any>): Promise<any> {
     const { groupId, content, sender, mediaUrl } = job.data;
 
-    const savedMessage = await this.chatService.createMessage(job.data);
+    try {
+      const savedMessage = await this.chatService.createMessage(job.data);
+      const userInfo = await this.userService.getUserInfo(sender);
 
-    const userInfo = await this.userService.getUserInfo(sender);
-
-    const messageWithUserInfo = {
-      id: savedMessage._id,
-      groupId,
-      content,
-      sender: userInfo,
-      timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
-        [],
-        {
-          hour: '2-digit',
-          minute: '2-digit',
-        },
-      ),
-      createdAt: savedMessage.createdAt,
-      image: mediaUrl,
-    };
-
-    this.chatGateway.server.to(groupId).emit('msgreceive', messageWithUserInfo);
-    const lastMessageData = {
-      groupId,
-      lastMessage: {
+      const messageWithUserInfo = {
+        id: savedMessage._id,
+        groupId,
         content,
         sender: userInfo,
-        timestamp: savedMessage.createdAt,
-      },
-    };
+        timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
+          [],
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+          },
+        ),
+        createdAt: savedMessage.createdAt,
+        image: mediaUrl,
+      };
 
-    
+      this.chatGateway.server
+        .to(groupId)
+        .emit('msgreceive', messageWithUserInfo);
 
-    this.globalGateway.emitToUsers(
-      await this.groupService.getGroupMemberIds(groupId),
-      'latestMessageUpdate',
-      lastMessageData,
-    );
+      const lastMessageData = {
+        groupId,
+        lastMessage: {
+          content,
+          sender: userInfo,
+          timestamp: savedMessage.createdAt,
+        },
+      };
 
-    return { status: 'ok' };
+      this.globalGateway.emitToUsers(
+        await this.groupService.getGroupMemberIds(groupId),
+        'latestMessageUpdate',
+        lastMessageData,
+      );
+
+      return { status: 'message-sent', messageId: savedMessage._id };
+    } catch (error) {
+      console.error('Error processing send-message job:', error);
+      throw error;
+    }
+  }
+
+  private async handleUpdateDelivered(job: Job<string>): Promise<any> {
+    const userId = job.data;
+
+    try {
+      console.log('Updating message delivery for user:', userId);
+
+      // Add your message delivery update logic here
+      // For example:
+      // await this.chatService.updateMessageDeliveryStatus(userId);
+
+      // Emit delivery update to relevant users
+      // this.globalGateway.emitToUser(userId, 'messageDelivered', { userId });
+
+      return { status: 'delivery-updated', userId };
+    } catch (error) {
+      console.error('Error processing update-delivered job:', error);
+      throw error;
+    }
+  }
+
+  private async handleUpdateSeen(job: Job<string>): Promise<any> {
+    const userId = job.data;
+
+    try {
+      console.log('Updating message seen status for user:', userId);
+
+      // Add your message seen update logic here
+      // For example:
+      // await this.chatService.updateMessageSeenStatus(userId);
+
+      // Emit seen update to relevant users
+      // this.globalGateway.emitToUser(userId, 'messageSeen', { userId });
+
+      return { status: 'seen-updated', userId };
+    } catch (error) {
+      console.error('Error processing update-seen job:', error);
+      throw error;
+    }
   }
 }
