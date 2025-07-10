@@ -55,7 +55,6 @@ const ChatWindow = ({ groupId }) => {
 
   const handleMessageReceived = useCallback(
     (msg) => {
-      console.log(msg,'msg ddd')
       const formattedMsg = {
         id: msg.id,
         sender: msg.sender.email,

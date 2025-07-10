@@ -69,7 +69,7 @@ export class ChatGateway
       mediaUrl?: string;
     },
     @ConnectedSocket() client: Socket,
-  ) {
+  ) { 
 
     try {
       //sending to bullmq the data
