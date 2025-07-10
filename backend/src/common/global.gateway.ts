@@ -14,6 +14,7 @@ import { GroupService } from 'src/group/group.service';
 import { ConfigService } from '@nestjs/config';
 import { NotificationService } from 'src/bullmq/queues/notification.queue';
 import { AuthService } from 'src/auth/auth.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 @WebSocketGateway({
@@ -34,6 +35,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
     private readonly notificationService: NotificationService,
+    private readonly redisService: RedisService,
   ) {}
 
   afterInit(server: Server) {}
@@ -52,6 +54,17 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const userId = (decoded as Jwt.JwtPayload).userId as string;
       client.join(userId);
       client.data.userId = userId;
+      const userInfo = await this.authService.getUserInfo(userId);
+      await this.redisService.setUserOnline(
+        userId,
+        userInfo?.username as string,
+      );
+      const onlineUsers = await this.redisService.getAllOnlineUsers();
+      const otherOnlineUsers = onlineUsers.filter(
+        (user) => user.userId !== userId,
+      );
+
+      client.emit('onlineUsersList', otherOnlineUsers);
       await this.notifyStatusToGroupMembers(userId, 'online');
     } catch (err) {
       console.log('invalid jwt token ', err);
@@ -64,7 +77,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const userId = client.data?.userId;
     if (!userId) return;
-
+    await this.redisService.removeOnlineUser(userId);
     await this.notifyStatusToGroupMembers(userId, 'offline');
   }
 

@@ -7,6 +7,7 @@ import { ChatModule } from './chat/chat.module';
 import { GlobalModule } from './common/global.module';
 import { BullModule } from '@nestjs/bullmq';
 import { BullmqModule } from './bullmq/bullmq.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { BullmqModule } from './bullmq/bullmq.module';
     GroupModule,
     ChatModule,
     GlobalModule, 
-    BullmqModule,
+    BullmqModule, RedisModule,
   ],
   controllers: [],
   providers: [],

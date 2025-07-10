@@ -12,9 +12,7 @@ import { Logger } from '@nestjs/common';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { MessageService } from 'src/bullmq/queues/message.queue';
-// import { AuthService } from 'src/auth/auth.service';
-// import { GlobalGateway } from 'src/common/global.gateway';
-// import { GroupService } from 'src/group/group.service';
+
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
