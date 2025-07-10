@@ -35,9 +35,6 @@ export class ChatGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly messageService:MessageService
-    // private readonly userService: AuthService,
-    // private readonly globalGateway: GlobalGateway,
-    // private readonly groupService: GroupService,
   ) {}
 
   afterInit(server: SocketIOServer) {

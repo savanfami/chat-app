@@ -50,35 +50,22 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
-      console.log('userid', userId);
       client.join(userId);
       client.data.userId = userId;
-      client.join(userId);
-      const allMembers = await this.authService.getAllmembers(userId);
-      const statusUser = await this.authService.getUserInfo(userId);
-      if (statusUser) {
-        const username = statusUser.username;
-        for (const user of allMembers) {
-          const memberUserId = user._id as any;
-          const memberId = memberUserId.toString();
-          if (memberId === userId) continue;
-
-          await this.notificationService.queueNotification({
-            targetUserId: memberId,
-            statusUserId: userId,
-            statusUserName: username,
-            status: 'online',
-          });
-        }
-      }
+      await this.notifyStatusToGroupMembers(userId, 'online');
     } catch (err) {
       console.log('invalid jwt token ', err);
       client.disconnect(true);
     }
   }
 
-  handleDisconnect(client: Socket) {
-    console.log(`global user disconnected- ${client.id}`);
+  async handleDisconnect(client: Socket) {
+    console.log(`global user disconnected - ${client.id}`);
+
+    const userId = client.data?.userId;
+    if (!userId) return;
+
+    await this.notifyStatusToGroupMembers(userId, 'offline');
   }
 
   @SubscribeMessage('createGroup')
@@ -113,6 +100,32 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitToUsers(userIds: string[], event: string, data: any) {
     for (const userId of userIds) {
       this.server.to(userId).emit(event, data);
+    }
+  }
+
+  private async notifyStatusToGroupMembers(
+    userId: string,
+    status: 'online' | 'offline',
+  ) {
+    const allMembers = await this.authService.getAllmembers(userId);
+    const statusUser = await this.authService.getUserInfo(userId);
+
+    if (!statusUser) return;
+
+    const username = statusUser.username;
+
+    for (const user of allMembers) {
+      const memberUserId = user._id as any;
+      const memberId = memberUserId.toString();
+
+      if (memberId === userId) continue;
+
+      await this.notificationService.queueNotification({
+        targetUserId: memberId,
+        statusUserId: userId,
+        statusUserName: username,
+        status,
+      });
     }
   }
 }

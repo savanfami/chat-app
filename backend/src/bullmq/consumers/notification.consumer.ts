@@ -12,7 +12,6 @@ export class NotificationConsumer extends WorkerHost {
 
   async process(payload: Job<any>): Promise<any> {
     const {targetUserId,statusUserId,status,statusUserName}=payload.data 
-    console.log(targetUserId,'target')
     this.globalGateway.emitToUsers([targetUserId],'user-status',{
       userId:statusUserId,
       username: statusUserName,

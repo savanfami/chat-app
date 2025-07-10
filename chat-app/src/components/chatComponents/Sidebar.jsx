@@ -29,17 +29,17 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
       timestamp: new Date(),
     };
 
-    setNotifications(prev => [...prev, notification]);
+    setNotifications((prev) => [...prev, notification]);
 
     // Auto remove notification after 4 seconds
     setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
     }, 4000);
   };
 
   // Function to manually remove notification
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   useEffect(() => {
@@ -75,7 +75,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
 
     const handleUserStatus = (data) => {
       console.log(data, "data from backenddsss");
-      
+
       // Show notification for online/offline status
       if (data.username && data.status) {
         showNotification(data.username, data.status);
@@ -96,7 +96,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     return () => {
       socket.off("fetchGroups", handleGroupUpdate);
       socket.off("latestMessageUpdate", handleLatestMessage);
-      socket.off('user-status', handleUserStatus);
+      socket.off("user-status", handleUserStatus);
       socket.off("groupCreated", handleNewGroup);
     };
   }, [socket]);
@@ -117,9 +117,9 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
               transform transition-all duration-300 ease-in-out
               animate-in slide-in-from-top-2
               ${
-                notification.status === 'online'
-                  ? 'bg-green-50 border-green-200 text-green-800'
-                  : 'bg-red-50 border-red-200 text-red-800'
+                notification.status === "online"
+                  ? "bg-green-50 border-green-200 text-green-800"
+                  : "bg-red-50 border-red-200 text-red-800"
               }
             `}
           >
@@ -127,9 +127,9 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
               className={`
                 w-3 h-3 rounded-full flex-shrink-0
                 ${
-                  notification.status === 'online'
-                    ? 'bg-green-500'
-                    : 'bg-red-500'
+                  notification.status === "online"
+                    ? "bg-green-500"
+                    : "bg-red-500"
                 }
               `}
             />
@@ -137,45 +137,20 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">
                 <span className="font-semibold">{notification.username}</span>
-                {' is '}
-                <span className={`
-                  ${notification.status === 'online' ? 'text-green-700' : 'text-red-700'}
-                `}>
+                {" is "}
+                <span
+                  className={`
+                  ${
+                    notification.status === "online"
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }
+                `}
+                >
                   {notification.status}
                 </span>
               </p>
             </div>
-
-         
-
-            {notification.status === 'offline' && (
-              <svg
-                className="w-5 h-5 text-red-600 flex-shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            )}
-
-            <button
-              onClick={() => removeNotification(notification.id)}
-              className={`
-                flex-shrink-0 p-1 rounded-full transition-colors duration-200
-                ${
-                  notification.status === 'online'
-                    ? 'hover:bg-green-100 text-green-600'
-                    : 'hover:bg-red-100 text-red-600'
-                }
-              `}
-            >
-            </button>
           </div>
         ))}
       </div>
