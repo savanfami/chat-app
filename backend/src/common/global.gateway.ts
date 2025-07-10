@@ -23,8 +23,6 @@ import { AuthService } from 'src/auth/auth.service';
     credentials: true,
   },
 })
-
-
 export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
@@ -35,10 +33,10 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly groupService: GroupService,
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
-    private readonly notificationService: NotificationService
-  ) { }
+    private readonly notificationService: NotificationService,
+  ) {}
 
-  afterInit(server: Server) { }
+  afterInit(server: Server) {}
 
   async handleConnection(client: Socket) {
     console.log(`global user connected ${client.id}`);
@@ -52,35 +50,27 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
-      console.log('userid',userId)
+      console.log('userid', userId);
       client.join(userId);
       client.data.userId = userId;
-      client.join(userId)
-      const allMembers = await this.authService.getAllmembers()
-      const onlineUsers: any = []
-      for (const user of allMembers) {
-        const userId = user._id as any
-        const memberId = userId.toString()
-        console.log(memberId,'memberid')
-        if (memberId === userId) continue;
-        const sockets = await this.server.in(memberId).fetchSockets(); 
-        // console.log(sockets,'sockets')
-        // if (sockets.length > 0) {
-          // onlineUsers.push({
-          //   _id: memberId,
-          //   username: user.username,
-          // });
+      client.join(userId);
+      const allMembers = await this.authService.getAllmembers(userId);
+      const statusUser = await this.authService.getUserInfo(userId);
+      if (statusUser) {
+        const username = statusUser.username;
+        for (const user of allMembers) {
+          const memberUserId = user._id as any;
+          const memberId = memberUserId.toString();
+          if (memberId === userId) continue;
 
           await this.notificationService.queueNotification({
             targetUserId: memberId,
             statusUserId: userId,
+            statusUserName: username,
             status: 'online',
           });
-          // client.emit('onlineUsers', onlineUsers);
-
-        // }
+        }
       }
-
     } catch (err) {
       console.log('invalid jwt token ', err);
       client.disconnect(true);
@@ -89,31 +79,6 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     console.log(`global user disconnected- ${client.id}`);
-  //     const userId = client.data?.userId;
-  // if (!userId) return;
-
-  // setTimeout(async () => {
-  //   const sockets = await this.server.in(userId).fetchSockets();
-  //   if (sockets.length === 0) {
-  //     const allUsers = await this.userService.getAllUsers();
-
-  //     for (const user of allUsers) {
-  //       const memberId = user._id.toString();
-  //       if (memberId === userId) continue;
-
-  //       const sockets = await this.server.in(memberId).fetchSockets();
-  //       if (sockets.length > 0) {
-  //         await this.notificationService.queueUserStatusNotify({
-  //           targetUserId: memberId,
-  //           statusUserId: userId,
-  //           status: 'offline',
-  //         });
-  //       }
-  //     }
-
-  //     this.logger.log(`User ${userId} fully disconnected`);
-  //   }
-  // }, 1000);
   }
 
   @SubscribeMessage('createGroup')
@@ -146,7 +111,6 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   emitToUsers(userIds: string[], event: string, data: any) {
-    console.log(userIds,'emitting for logins',event,data)
     for (const userId of userIds) {
       this.server.to(userId).emit(event, data);
     }

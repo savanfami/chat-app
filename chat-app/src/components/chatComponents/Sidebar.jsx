@@ -6,6 +6,7 @@ import { useGlobalSocket } from "../../context/socketContext";
 const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   const socket = useGlobalSocket();
 
@@ -19,6 +20,28 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     }
   };
 
+  // Function to show notification
+  const showNotification = (username, status) => {
+    const notification = {
+      id: Date.now(),
+      username,
+      status,
+      timestamp: new Date(),
+    };
+
+    setNotifications(prev => [...prev, notification]);
+
+    // Auto remove notification after 4 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    }, 4000);
+  };
+
+  // Function to manually remove notification
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
   useEffect(() => {
     fetchUserGroups();
   }, [groupCreatedTrigger]);
@@ -27,7 +50,6 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     if (!socket) return;
 
     const handleGroupUpdate = (groups) => {
-      // console.log(" Groups received via fetchGroups:", groups);
       setGroups(groups);
     };
 
@@ -53,16 +75,20 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
 
     const handleUserStatus = (data) => {
       console.log(data, "data from backenddsss");
+      
+      // Show notification for online/offline status
+      if (data.username && data.status) {
+        showNotification(data.username, data.status);
+      }
     };
 
     const handleNewGroup = (newGroup) => {
-      // console.log(" groupCreated event received:", newGroup);
       fetchUserGroups();
     };
+
     socket.on("user-status", handleUserStatus);
     socket.on("fetchGroups", handleGroupUpdate);
     socket.on("latestMessageUpdate", handleLatestMessage);
-
     socket.on("groupCreated", handleNewGroup);
 
     socket.emit("getGroups");
@@ -70,7 +96,7 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
     return () => {
       socket.off("fetchGroups", handleGroupUpdate);
       socket.off("latestMessageUpdate", handleLatestMessage);
-      socket.off('user-status',handleUserStatus)
+      socket.off('user-status', handleUserStatus);
       socket.off("groupCreated", handleNewGroup);
     };
   }, [socket]);
@@ -81,11 +107,83 @@ const Sidebar = ({ onCreateGroup, onSelectGroup, groupCreatedTrigger }) => {
   };
 
   return (
-    <div className="w-1/4 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm">
+    <div className="w-1/4 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm relative">
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`
+              flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border 
+              transform transition-all duration-300 ease-in-out
+              animate-in slide-in-from-top-2
+              ${
+                notification.status === 'online'
+                  ? 'bg-green-50 border-green-200 text-green-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }
+            `}
+          >
+            <div
+              className={`
+                w-3 h-3 rounded-full flex-shrink-0
+                ${
+                  notification.status === 'online'
+                    ? 'bg-green-500'
+                    : 'bg-red-500'
+                }
+              `}
+            />
+
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">
+                <span className="font-semibold">{notification.username}</span>
+                {' is '}
+                <span className={`
+                  ${notification.status === 'online' ? 'text-green-700' : 'text-red-700'}
+                `}>
+                  {notification.status}
+                </span>
+              </p>
+            </div>
+
+         
+
+            {notification.status === 'offline' && (
+              <svg
+                className="w-5 h-5 text-red-600 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            )}
+
+            <button
+              onClick={() => removeNotification(notification.id)}
+              className={`
+                flex-shrink-0 p-1 rounded-full transition-colors duration-200
+                ${
+                  notification.status === 'online'
+                    ? 'hover:bg-green-100 text-green-600'
+                    : 'hover:bg-red-100 text-red-600'
+                }
+              `}
+            >
+            </button>
+          </div>
+        ))}
+      </div>
+
       <div className="p-4 border-b border-gray-100 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-800 mb-3">Messages</h2>
         <button
-          className="w-full bg-blue-600  text-white px-4 py-2.5 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 font-medium shadow-sm"
+          className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 font-medium shadow-sm"
           onClick={onCreateGroup}
         >
           <svg
