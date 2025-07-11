@@ -1,13 +1,16 @@
 import { Document, Types } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Schema({timestamps:true})
+@Schema({ timestamps: true })
 export class MessagePref extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Message', required: true })
   messageId: string;
 
-  @Prop({ required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Message', required: true })
   ownerId: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Group'})
+  groupId: string;
 
   @Prop()
   deliveredAt?: Date;

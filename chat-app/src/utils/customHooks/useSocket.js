@@ -8,9 +8,12 @@ export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
 
   const handleMessageReceived = useCallback(
     (msg) => {
+      if(msg.groupId==groupId){
+        socketRef.current.emit('messageSeen',{groupId:msg.groupId})
+      }
       if (onMessageReceived) onMessageReceived(msg);
     },
-    [onMessageReceived]
+    [onMessageReceived,groupId]
   );
 
   const handleMessageEdited = useCallback(
@@ -27,6 +30,9 @@ export const useSocket = (groupId, onMessageReceived, onMessageEdited) => {
     socketRef.current = io(`${SOCKET_URL}${namespace}`, {
       withCredentials: true,
       transports: ["websocket"],
+      auth: {
+        token: localStorage.getItem("token"),
+      },
     });
 
     socketRef.current.emit("joinRoom", groupId);

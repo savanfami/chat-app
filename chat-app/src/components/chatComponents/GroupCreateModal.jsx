@@ -14,7 +14,7 @@ const GroupCreateModal = ({ onClose, onGroupCreated }) => {
     const fetchUsers = async () => {
       try {
         const response = await axiosInstance.get("/auth/list");
-        console.log(response.data, "response data");
+        // console.log(response.data, "response data");
         setAllUsers(response.data);
       } catch (err) {
         console.error("Failed to fetch users", err);

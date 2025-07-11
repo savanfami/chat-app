@@ -38,44 +38,47 @@ export class MessageConsumer extends WorkerHost {
 
     try {
       const savedMessage = await this.chatService.createMessage(job.data);
+      // console.log(savedMessage,'saved msggg');
+      // const updateMessagePrefSchema=await this.chatService.updateMessageDelivery(savedMessage._id)
       const userInfo = await this.userService.getUserInfo(sender);
-
-      const messageWithUserInfo = {
-        id: savedMessage._id,
-        groupId,
-        content,
-        sender: userInfo,
-        timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
-          [],
-          {
-            hour: '2-digit',
-            minute: '2-digit',
-          },
-        ),
-        createdAt: savedMessage.createdAt,
-        image: mediaUrl,
-      };
-
-      this.chatGateway.server
-        .to(groupId)
-        .emit('msgreceive', messageWithUserInfo);
-
-      const lastMessageData = {
-        groupId,
-        lastMessage: {
+      if (savedMessage) {
+        const messageWithUserInfo = {
+          id: savedMessage._id,
+          groupId,
           content,
           sender: userInfo,
-          timestamp: savedMessage.createdAt,
-        },
-      };
+          timestamp: new Date(savedMessage.createdAt as any).toLocaleTimeString(
+            [],
+            {
+              hour: '2-digit',
+              minute: '2-digit',
+            },
+          ),
+          createdAt: savedMessage.createdAt,
+          image: mediaUrl,
+        };
 
-      this.globalGateway.emitToUsers(
-        await this.groupService.getGroupMemberIds(groupId),
-        'latestMessageUpdate',
-        lastMessageData,
-      );
+        this.chatGateway.server
+          .to(groupId)
+          .emit('msgreceive', messageWithUserInfo);
 
-      return { status: 'message-sent', messageId: savedMessage._id };
+        const lastMessageData = {
+          groupId,
+          lastMessage: {
+            content,
+            sender: userInfo,
+            timestamp: savedMessage.createdAt,
+          },
+        };
+
+        this.globalGateway.emitToUsers(
+          await this.groupService.getGroupMemberIds(groupId),
+          'latestMessageUpdate',
+          lastMessageData,
+        );
+
+        return { status: 'message-sent', messageId: savedMessage._id };
+      }
     } catch (error) {
       console.error('Error processing send-message job:', error);
       throw error;
@@ -86,15 +89,7 @@ export class MessageConsumer extends WorkerHost {
     const userId = job.data;
 
     try {
-      console.log('Updating message delivery for user:', userId);
-
-      // Add your message delivery update logic here
-      // For example:
-      // await this.chatService.updateMessageDeliveryStatus(userId);
-
-      // Emit delivery update to relevant users
-      // this.globalGateway.emitToUser(userId, 'messageDelivered', { userId });
-
+      await this.chatService.updateMessageDelivery(userId);
       return { status: 'delivery-updated', userId };
     } catch (error) {
       console.error('Error processing update-delivered job:', error);
@@ -102,20 +97,11 @@ export class MessageConsumer extends WorkerHost {
     }
   }
 
-  private async handleUpdateSeen(job: Job<string>): Promise<any> {
-    const userId = job.data;
-
+  private async handleUpdateSeen(job: Job<{userId:string,roomId:string}>): Promise<any> {
+    const {userId,roomId}=job.data
     try {
-      console.log('Updating message seen status for user:', userId);
-
-      // Add your message seen update logic here
-      // For example:
-      // await this.chatService.updateMessageSeenStatus(userId);
-
-      // Emit seen update to relevant users
-      // this.globalGateway.emitToUser(userId, 'messageSeen', { userId });
-
-      return { status: 'seen-updated', userId };
+      await this.chatService.updateMessageSeen(userId,roomId)
+      return { status: 'seen-updated'};
     } catch (error) {
       console.error('Error processing update-seen job:', error);
       throw error;

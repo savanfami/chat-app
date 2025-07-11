@@ -9,10 +9,11 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as Jwt from 'jsonwebtoken';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { MessageService } from 'src/bullmq/queues/message.queue';
-
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
@@ -23,7 +24,7 @@ import { MessageService } from 'src/bullmq/queues/message.queue';
   },
 })
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect 
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   server: SocketIOServer;
@@ -32,7 +33,8 @@ export class ChatGateway
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly messageService:MessageService
+    private readonly messageService: MessageService,
+    private readonly configService: ConfigService,
   ) {}
 
   afterInit(server: SocketIOServer) {
@@ -42,6 +44,14 @@ export class ChatGateway
   handleConnection(client: Socket) {
     const namespace = client.nsp;
     console.log(`Client connected to namespace: ${namespace.name}`);
+    const token = client.handshake?.auth?.token;
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    if (!jwtSecret) {
+      throw new Error('jwt secret is not defined in environment');
+    }
+    const decoded = Jwt.verify(token, jwtSecret);
+    const userId = (decoded as Jwt.JwtPayload).userId as string;
+    client.data.userId = userId;
   }
 
   handleDisconnect(client: Socket) {
@@ -49,12 +59,14 @@ export class ChatGateway
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(
+  async handleJoinRoom(
     @MessageBody() roomId: string,
     @ConnectedSocket() client: Socket,
   ) {
     client.join(roomId);
     console.log(`Client ${client.id} joined room ${roomId}`);
+    const userId = client.data?.userId;
+    await this.messageService.updateMessageSeen(userId, roomId);
   }
 
   @SubscribeMessage('sendmsg')
@@ -67,11 +79,10 @@ export class ChatGateway
       mediaUrl?: string;
     },
     @ConnectedSocket() client: Socket,
-  ) { 
-
+  ) {
     try {
       //sending to bullmq the data
-      await this.messageService.queueMessage(data)
+      await this.messageService.queueMessage(data);
     } catch (err) {
       console.error('Failed to save or emit message:', err);
     }
@@ -94,6 +105,22 @@ export class ChatGateway
       client.nsp.to(groupId).emit('editmsgrecieve', editedMsg);
     } catch (error) {
       console.error('Failed to edit message:', error);
+    }
+  }
+
+  @SubscribeMessage('messageSeen')
+  async handleMessageSeen(
+    @MessageBody()
+    data: {
+      groupId: string;
+    },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const userId = client.data?.userId;
+      await this.messageService.updateMessageSeen(userId, data.groupId);
+    } catch (err) {
+      console.error('Failed to save or emit message:', err);
     }
   }
 }

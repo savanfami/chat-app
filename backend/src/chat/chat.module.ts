@@ -8,10 +8,14 @@ import { ChatGateway } from './chat.gateway';
 import { GroupModule } from 'src/group/group.module';
 import { GlobalModule } from 'src/common/global.module';
 import { BullmqModule } from 'src/bullmq/bullmq.module';
+import { MessagePref, MessagePrefSchema } from './schema/messagepref.schema';
+import { Group, GroupSchema } from 'src/group/schema/group.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
+    MongooseModule.forFeature([{name:MessagePref.name,schema:MessagePrefSchema}]),
+    MongooseModule.forFeature([{name:Group.name,schema:GroupSchema}]),
     AuthModule,
     GroupModule,
     GlobalModule,

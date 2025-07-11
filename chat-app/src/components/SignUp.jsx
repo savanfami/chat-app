@@ -56,7 +56,7 @@ const SignUp = () => {
     if (validate()) {
       try {
         const response = await axiosInstance.post("/auth/signup", formData);
-        console.log("Signup successful:", response.data);
+        // console.log("Signup successful:", response.data);
         navigate("/login");
       } catch (error) {
         console.error("Signup error:", error.response?.data || error.message);

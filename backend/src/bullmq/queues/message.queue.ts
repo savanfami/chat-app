@@ -15,7 +15,6 @@ export class MessageService {
   }
 
   async updateMessageDelivery(userId: string) {
-    console.log('Queuing delivery update for user id:', userId);
     await this.messageQueue.add('update-delivered', userId, {
       attempts: 3,
       removeOnComplete: true,
@@ -23,9 +22,8 @@ export class MessageService {
     });
   }
 
-  async updateMessageSeen(userId: string) {
-    console.log('Queuing seen update for user id:', userId);
-    await this.messageQueue.add('update-seen', userId, {
+  async updateMessageSeen(userId: string,roomId:string) {
+    await this.messageQueue.add('update-seen',{userId,roomId}, {
       attempts: 3,
       removeOnComplete: true,
       backoff: 1000,
