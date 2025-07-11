@@ -49,115 +49,114 @@ export class ChatService {
     //   .populate('sender');
     //   console.log(msg,'fetch messages');
     //   return msg
-const messages = await this.messageModel.aggregate([
-  { $match: { groupId } },
-  { $sort: { createdAt: 1 } },
+    const messages = await this.messageModel.aggregate([
+      { $match: { groupId } },
+      { $sort: { createdAt: 1 } },
 
-  // Lookup deliveryInfo from messageprefs
-  {
-    $lookup: {
-      from: 'messageprefs',
-      localField: '_id',
-      foreignField: 'messageId',
-      as: 'deliveryInfo',
-    },
-  },
+      // Lookup deliveryInfo from messageprefs
+      {
+        $lookup: {
+          from: 'messageprefs',
+          localField: '_id',
+          foreignField: 'messageId',
+          as: 'deliveryInfo',
+        },
+      },
 
-  // Lookup sender details
-  {
-    $lookup: {
-      from: 'users',
-      localField: 'sender',
-      foreignField: '_id',
-      as: 'sender',
-    },
-  },
-  { $unwind: '$sender' },
+      // Lookup sender details
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'sender',
+          foreignField: '_id',
+          as: 'sender',
+        },
+      },
+      { $unwind: '$sender' },
 
-  // Extract readByIds and deliveredToIds
-  {
-    $addFields: {
-      readByIds: {
-        $map: {
-          input: {
-            $filter: {
-              input: '$deliveryInfo',
-              as: 'info',
-              cond: { $eq: [{ $type: '$$info.readAt' }, 'date'] },
+      // Extract readByIds and deliveredToIds
+      {
+        $addFields: {
+          readByIds: {
+            $map: {
+              input: {
+                $filter: {
+                  input: '$deliveryInfo',
+                  as: 'info',
+                  cond: { $eq: [{ $type: '$$info.readAt' }, 'date'] },
+                },
+              },
+              as: 'readInfo',
+              in: '$$readInfo.ownerId',
             },
           },
-          as: 'readInfo',
-          in: '$$readInfo.ownerId',
-        },
-      },
-      deliveredToIds: {
-        $map: {
-          input: {
-            $filter: {
-              input: '$deliveryInfo',
-              as: 'info',
-              cond: { $eq: [{ $type: '$$info.deliveredAt' }, 'date'] },
+          deliveredToIds: {
+            $map: {
+              input: {
+                $filter: {
+                  input: '$deliveryInfo',
+                  as: 'info',
+                  cond: { $eq: [{ $type: '$$info.deliveredAt' }, 'date'] },
+                },
+              },
+              as: 'deliveredInfo',
+              in: '$$deliveredInfo.ownerId',
             },
           },
-          as: 'deliveredInfo',
-          in: '$$deliveredInfo.ownerId',
         },
       },
-    },
-  },
 
-  // Lookup usernames for readBy
-  {
-    $lookup: {
-      from: 'users',
-      localField: 'readByIds',
-      foreignField: '_id',
-      as: 'readUsers',
-    },
-  },
-
-  // Lookup usernames for deliveredTo
-  {
-    $lookup: {
-      from: 'users',
-      localField: 'deliveredToIds',
-      foreignField: '_id',
-      as: 'deliveredUsers',
-    },
-  },
-
-  // Replace readBy and deliveredTo with array of usernames
-  {
-    $addFields: {
-      readBy: {
-        $map: {
-          input: '$readUsers',
-          as: 'user',
-          in: '$$user.username',
+      // Lookup usernames for readBy
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'readByIds',
+          foreignField: '_id',
+          as: 'readUsers',
         },
       },
-      deliveredTo: {
-        $map: {
-          input: '$deliveredUsers',
-          as: 'user',
-          in: '$$user.username',
+
+      // Lookup usernames for deliveredTo
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'deliveredToIds',
+          foreignField: '_id',
+          as: 'deliveredUsers',
         },
       },
-    },
-  },
 
-  // Optional cleanup (remove helper arrays)
-  {
-    $project: {
-      readUsers: 0,
-      deliveredUsers: 0,
-      readByIds: 0,
-      deliveredToIds: 0,
-    },
-  },
-]);
+      // Replace readBy and deliveredTo with array of usernames
+      {
+        $addFields: {
+          readBy: {
+            $map: {
+              input: '$readUsers',
+              as: 'user',
+              in: '$$user.username',
+            },
+          },
+          deliveredTo: {
+            $map: {
+              input: '$deliveredUsers',
+              as: 'user',
+              in: '$$user.username',
+            },
+          },
+        },
+      },
 
-    console.log(messages, 'messagesss');
+      // Optional cleanup (remove helper arrays)
+      {
+        $project: {
+          readUsers: 0,
+          deliveredUsers: 0,
+          readByIds: 0,
+          deliveredToIds: 0,
+        },
+      },
+    ]);
+
     return messages;
   }
 
@@ -175,7 +174,7 @@ const messages = await this.messageModel.aggregate([
   }
 
   async updateMessageDelivery(userId: string) {
-    return await this.messagePrefModel.updateMany(
+    await this.messagePrefModel.updateMany(
       {
         ownerId: new Types.ObjectId(userId),
         deliveredAt: { $exists: false },
@@ -193,5 +192,15 @@ const messages = await this.messageModel.aggregate([
       },
       { $set: { readAt: new Date() } },
     );
+  }
+
+  async getUniqueGroupIds(userId: string) {
+    const groupIds = await this.messagePrefModel
+      .find({
+        ownerId: new Types.ObjectId(userId),
+        deliveredAt: { $exists: true },
+      })
+      .distinct('groupId');
+    return groupIds;
   }
 }

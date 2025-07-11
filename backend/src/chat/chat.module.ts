@@ -14,15 +14,17 @@ import { Group, GroupSchema } from 'src/group/schema/group.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
-    MongooseModule.forFeature([{name:MessagePref.name,schema:MessagePrefSchema}]),
-    MongooseModule.forFeature([{name:Group.name,schema:GroupSchema}]),
+    MongooseModule.forFeature([
+      { name: MessagePref.name, schema: MessagePrefSchema },
+    ]),
+    MongooseModule.forFeature([{ name: Group.name, schema: GroupSchema }]),
     AuthModule,
     GroupModule,
-    GlobalModule,
+    forwardRef(() => GlobalModule),
     forwardRef(() => BullmqModule),
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
-  exports: [ChatService,ChatGateway],
+  exports: [ChatService, ChatGateway],
 })
 export class ChatModule {}

@@ -57,7 +57,7 @@ export class MessageConsumer extends WorkerHost {
           createdAt: savedMessage.createdAt,
           image: mediaUrl,
         };
-
+        // console.log(messageWithUserInfo,'message with user info');
         this.chatGateway.server
           .to(groupId)
           .emit('msgreceive', messageWithUserInfo);

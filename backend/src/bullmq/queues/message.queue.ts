@@ -15,7 +15,7 @@ export class MessageService {
   }
 
   async updateMessageDelivery(userId: string) {
-    await this.messageQueue.add('update-delivered', userId, {
+   const job= await this.messageQueue.add('update-delivered', userId, {
       attempts: 3,
       removeOnComplete: true,
       backoff: 1000,

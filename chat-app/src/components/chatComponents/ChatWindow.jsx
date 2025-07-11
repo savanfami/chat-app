@@ -3,7 +3,7 @@ import { axiosInstance } from "../../../constants/axiosInstance";
 import { jwtDecode } from "jwt-decode";
 import { useSocket } from "../../utils/customHooks/useSocket";
 import { uploadToCloudinary } from "../../utils/common/cloudinary";
-import ReactPlayer from "react-player";
+
 const ChatWindow = ({ groupId }) => {
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -13,6 +13,7 @@ const ChatWindow = ({ groupId }) => {
   const [message, setMessage] = useState("");
   const [editingMessage, setEditingMessage] = useState(null);
   const [editText, setEditText] = useState("");
+  const [showInfoModal, setShowInfoModal] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const editInputRef = useRef(null);
@@ -35,7 +36,6 @@ const ChatWindow = ({ groupId }) => {
     const extension = url.split(".").pop().toLowerCase();
     const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"];
     const videoExtensions = ["mp4", "mov", "avi", "wmv", "flv", "webm", "mkv"];
-
     if (imageExtensions.includes(extension)) return "image";
     if (videoExtensions.includes(extension)) return "video/mp4";
     return "file";
@@ -44,9 +44,7 @@ const ChatWindow = ({ groupId }) => {
   const createFilePreview = (file) => {
     const fileType = getFileType(file);
     if (fileType === "image" || fileType === "video/mp4") {
-      console.log(file, "flieeeeeee");
       const url = URL.createObjectURL(file);
-      console.log("url and filetype", url, fileType);
       setFilePreview({ url, type: fileType });
     } else {
       setFilePreview(null);
@@ -55,6 +53,7 @@ const ChatWindow = ({ groupId }) => {
 
   const handleMessageReceived = useCallback(
     (msg) => {
+      console.log(msg, "msg from socket");
       const formattedMsg = {
         id: msg.id,
         sender: msg.sender.email,
@@ -63,17 +62,54 @@ const ChatWindow = ({ groupId }) => {
         timestamp: msg.timestamp,
         isCurrentUser: msg.sender._id === currentUser,
         image: msg.image,
-        mediaUrl: msg.mediaUrl, 
+        mediaUrl: msg.mediaUrl,
         isEdited: msg.edited || false,
+        readBy: msg.readBy || [],
+        deliveredTo: msg.deliveredTo || [],
       };
-
       setMessages((prev) => [...prev, formattedMsg]);
     },
     [currentUser]
   );
+  const handleMessageSeenUpdate = useCallback(
+    ({ groupId: seenGroupId, readBy }) => {
+      console.log(readBy, "readbyyy");
+      if (seenGroupId !== groupId) return;
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (!msg.readBy?.includes(readBy)) {
+            return {
+              ...msg,
+              readBy: [...msg.readBy, readBy],
+            };
+          }
+          return msg;
+        })
+      );
+    },
+    [groupId]
+  );
+
+  const handleMessageDeliveredUpdate = useCallback(
+    ({ groupId: deliveredGroupId, deliveredTo }) => {
+      if (deliveredGroupId !== groupId) return;
+
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => {
+          if (!msg.deliveredTo?.includes(deliveredTo)) {
+            return {
+              ...msg,
+              deliveredTo: [...(msg.deliveredTo || []), deliveredTo],
+            };
+          }
+          return msg;
+        })
+      );
+    },
+    [groupId]
+  );
 
   const handleMessageEdited = useCallback((updatedMsg) => {
-    console.log("Received edited message:", updatedMsg);
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === updatedMsg._id || msg.id === updatedMsg.id
@@ -92,14 +128,15 @@ const ChatWindow = ({ groupId }) => {
   const { sendMessage, editMessage } = useSocket(
     groupId,
     handleMessageReceived,
-    handleMessageEdited
+    handleMessageEdited,
+    handleMessageSeenUpdate,
+    handleMessageDeliveredUpdate 
   );
 
   const fetchMessages = async () => {
     if (!groupId) return;
     try {
       const response = await axiosInstance.get(`/messages/${groupId}`);
-      // console.log(response, "response");
       const formatted = response.data.map((msg) => ({
         id: msg._id,
         sender: msg.sender.email,
@@ -110,14 +147,13 @@ const ChatWindow = ({ groupId }) => {
           minute: "2-digit",
         }),
         isCurrentUser: msg.sender._id === currentUser,
-        image: msg.mediaUrl, 
-        mediaUrl: msg.mediaUrl, 
+        image: msg.mediaUrl,
+        mediaUrl: msg.mediaUrl,
         isEdited: msg.edited || false,
-        // groupName: msg.groupId.name,
+        readBy: msg.readBy || [],
+        deliveredTo: msg.deliveredTo || [],
       }));
       setMessages(formatted);
-      // console.log(formatted[0].groupName, "groupppppppName");
-      // console.log(formatted, "formattteed");
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -130,11 +166,11 @@ const ChatWindow = ({ groupId }) => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       scrollToBottom();
     }, 100);
-
     return () => clearTimeout(timeout);
   }, [messages]);
 
@@ -154,16 +190,13 @@ const ChatWindow = ({ groupId }) => {
 
   const handleSend = async () => {
     if (!message.trim() && !file) return;
-
     try {
       let mediaUrl = null;
-
       if (file) {
         setIsUploading(true);
         const url = await uploadToCloudinary(file);
         mediaUrl = url;
       }
-
       const payload = {
         groupId,
         content: message,
@@ -189,13 +222,11 @@ const ChatWindow = ({ groupId }) => {
 
   const handleSaveEdit = () => {
     if (!editText.trim()) return;
-
     const payload = {
       messageId: editingMessage,
       content: editText,
       groupId,
     };
-
     editMessage(payload);
   };
 
@@ -257,9 +288,7 @@ const ChatWindow = ({ groupId }) => {
 
   const renderMediaContent = (mediaUrl) => {
     if (!mediaUrl) return null;
-
     const mediaType = getMediaTypeFromUrl(mediaUrl);
-
     if (mediaType === "image") {
       return (
         <div className="mb-2">
@@ -285,8 +314,15 @@ const ChatWindow = ({ groupId }) => {
         </div>
       );
     }
-
     return null;
+  };
+
+  const handleInfoClick = (msg) => {
+    setShowInfoModal(msg.id);
+  };
+
+  const closeInfoModal = () => {
+    setShowInfoModal(null);
   };
 
   if (!groupId) {
@@ -303,7 +339,7 @@ const ChatWindow = ({ groupId }) => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                // strokewidthhintwidth={2}
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
@@ -328,8 +364,7 @@ const ChatWindow = ({ groupId }) => {
               G
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Group
-              </h2>
+              <h2 className="font-semibold text-gray-900">Group</h2>
             </div>
           </div>
         </div>
@@ -368,6 +403,32 @@ const ChatWindow = ({ groupId }) => {
                     <div className="text-xs font-medium text-gray-500 mb-1">
                       {getUserName(msg.username)}
                     </div>
+                  )}
+
+                  {(msg.isCurrentUser || !msg.isCurrentUser) && (
+                    <button
+                      onClick={() => handleInfoClick(msg)}
+                      className={`absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity ${
+                        msg.isCurrentUser
+                          ? "bg-white text-blue-600 shadow-md"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                      title="Message Info"
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </button>
                   )}
 
                   {msg.isCurrentUser && msg.text && (
@@ -414,7 +475,7 @@ const ChatWindow = ({ groupId }) => {
                           <div className="flex gap-2">
                             <button
                               onClick={handleCancelEdit}
-                              className="px-2 py-1 bg-white cursor-pointer rounded text-xs "
+                              className="px-2 py-1 bg-white cursor-pointer rounded text-xs"
                             >
                               ❌
                             </button>
@@ -442,6 +503,52 @@ const ChatWindow = ({ groupId }) => {
                 </div>
               </div>
             </div>
+
+            {showInfoModal === msg.id && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-80 max-w-full">
+                  <h3 className="text-lg font-semibold mb-4">Message Info</h3>
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700">
+                      Read By:
+                    </h4>
+                    {msg.readBy.length > 0 ? (
+                      <ul className="list-disc pl-5 text-sm text-gray-600">
+                        {msg.readBy.map((user, index) => (
+                          <li key={index}>{user}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-600">
+                        No one has read this message yet.
+                      </p>
+                    )}
+                  </div>
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700">
+                      Delivered To:
+                    </h4>
+                    {msg.deliveredTo.length > 0 ? (
+                      <ul className="list-disc pl-5 text-sm text-gray-600">
+                        {msg.deliveredTo.map((user, index) => (
+                          <li key={index}>{user}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-600">
+                        Not delivered to anyone yet.
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={closeInfoModal}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -486,7 +593,6 @@ const ChatWindow = ({ groupId }) => {
                       className="w-40 h-40 object-cover rounded-lg border border-gray-300 shadow-sm"
                       muted
                     />
-
                     <button
                       onClick={handleRemoveFile}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-colors duration-200"
@@ -610,7 +716,6 @@ const ChatWindow = ({ groupId }) => {
             className="hidden"
             onChange={handleFileChange}
           />
-
           <button
             onClick={() => fileInputRef.current?.click()}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 flex-shrink-0"
@@ -630,7 +735,6 @@ const ChatWindow = ({ groupId }) => {
               />
             </svg>
           </button>
-
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
@@ -643,7 +747,6 @@ const ChatWindow = ({ groupId }) => {
               style={{ height: "auto" }}
             />
           </div>
-
           <button
             onClick={handleSend}
             disabled={(!message.trim() && !file) || isUploading}

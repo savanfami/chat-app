@@ -14,6 +14,7 @@ import * as Jwt from 'jsonwebtoken';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { MessageService } from 'src/bullmq/queues/message.queue';
+import { AuthService } from 'src/auth/auth.service';
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
@@ -35,6 +36,7 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly messageService: MessageService,
     private readonly configService: ConfigService,
+    private readonly userService: AuthService,
   ) {}
 
   afterInit(server: SocketIOServer) {
@@ -67,7 +69,13 @@ export class ChatGateway
     console.log(`Client ${client.id} joined room ${roomId}`);
     const userId = client.data?.userId;
     await this.messageService.updateMessageSeen(userId, roomId);
+    const userData = await this.userService.getUserInfo(userId);
+    this.server.to(roomId).emit('messageSeenUpdate', {
+      groupId: roomId,
+      readBy: userData?.username,
+    });
   }
+  catch(err) {}
 
   @SubscribeMessage('sendmsg')
   async handleSendMessage(
@@ -119,6 +127,11 @@ export class ChatGateway
     try {
       const userId = client.data?.userId;
       await this.messageService.updateMessageSeen(userId, data.groupId);
+      const userData = await this.userService.getUserInfo(userId);
+      this.server.to(data.groupId).emit('messageSeenUpdate', {
+        groupId: data.groupId,
+        readBy: userData?.username,
+      });
     } catch (err) {
       console.error('Failed to save or emit message:', err);
     }

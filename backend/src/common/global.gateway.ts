@@ -16,6 +16,7 @@ import { NotificationService } from 'src/bullmq/queues/notification.queue';
 import { AuthService } from 'src/auth/auth.service';
 import { RedisService } from 'src/redis/redis.service';
 import { MessageService } from 'src/bullmq/queues/message.queue';
+import { ChatService } from 'src/chat/chat.service';
 
 @Injectable()
 @WebSocketGateway({
@@ -38,6 +39,7 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly notificationService: NotificationService,
     private readonly messageService: MessageService,
     private readonly redisService: RedisService,
+    private readonly chatService: ChatService,
   ) {}
 
   afterInit(server: Server) {}
@@ -54,9 +56,23 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const decoded = Jwt.verify(token, jwtSecret);
       const userId = (decoded as Jwt.JwtPayload).userId as string;
+      const username = (decoded as Jwt.JwtPayload).username as string;
       client.join(userId);
       client.data.userId = userId;
+
       await this.messageService.updateMessageDelivery(userId);
+      const deliveredGroupIds =
+        await this.chatService.getUniqueGroupIds(userId);
+      for (const groupId of deliveredGroupIds) {
+        console.log(groupId, 'group idss');
+        this.server
+          .of(`/chat-${groupId}`)
+          .to(groupId)
+          .emit('messageDeliveredUpdate', {
+            groupId,
+            deliveredTo: username,
+          });
+      }
       const userInfo = await this.authService.getUserInfo(userId);
       await this.redisService.setUserOnline(
         userId,
