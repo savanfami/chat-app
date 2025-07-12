@@ -15,6 +15,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { MessageService } from 'src/bullmq/queues/message.queue';
 import { AuthService } from 'src/auth/auth.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @WebSocketGateway({
   namespace: /^\/chat-\w+$/,
@@ -25,8 +26,7 @@ import { AuthService } from 'src/auth/auth.service';
   },
 })
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: SocketIOServer;
 
@@ -37,7 +37,9 @@ export class ChatGateway
     private readonly messageService: MessageService,
     private readonly configService: ConfigService,
     private readonly userService: AuthService,
-  ) {}
+    private readonly redisService: RedisService,
+
+  ) { }
 
   afterInit(server: SocketIOServer) {
     this.server = server;
@@ -75,7 +77,7 @@ export class ChatGateway
       readBy: userData?.username,
     });
   }
-  catch(err) {}
+  catch(err) { }
 
   @SubscribeMessage('sendmsg')
   async handleSendMessage(
@@ -89,8 +91,22 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      //sending to bullmq the data
+      const groupId = data.groupId
       await this.messageService.queueMessage(data);
+      const userId = client.data?.userId;
+      const onlineUsers = await this.redisService.getAllOnlineUsers();
+      const otherOnlineUsers = onlineUsers.filter(
+        (user) => user.userId !== userId,
+      );
+      for (const userr of otherOnlineUsers) {
+        await this.messageService.updateMessageDelivery(userr.userId);
+        client.emit('messageDeliveredUpdate', {
+          groupId,
+          deliveredTo: userr.username,
+        })
+      }
+
+      console.log(otherOnlineUsers, 'otehr users')
     } catch (err) {
       console.error('Failed to save or emit message:', err);
     }

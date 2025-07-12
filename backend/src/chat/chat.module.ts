@@ -10,6 +10,7 @@ import { GlobalModule } from 'src/common/global.module';
 import { BullmqModule } from 'src/bullmq/bullmq.module';
 import { MessagePref, MessagePrefSchema } from './schema/messagepref.schema';
 import { Group, GroupSchema } from 'src/group/schema/group.schema';
+import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { Group, GroupSchema } from 'src/group/schema/group.schema';
     GroupModule,
     forwardRef(() => GlobalModule),
     forwardRef(() => BullmqModule),
+    RedisModule
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],

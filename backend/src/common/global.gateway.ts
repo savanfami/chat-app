@@ -40,9 +40,9 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly messageService: MessageService,
     private readonly redisService: RedisService,
     private readonly chatService: ChatService,
-  ) {}
+  ) { }
 
-  afterInit(server: Server) {}
+  afterInit(server: Server) { }
 
   async handleConnection(client: Socket) {
     console.log(`global user connected ${client.id}`);
@@ -64,7 +64,6 @@ export class GlobalGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const deliveredGroupIds =
         await this.chatService.getUniqueGroupIds(userId);
       for (const groupId of deliveredGroupIds) {
-        console.log(groupId, 'group idss');
         this.server
           .of(`/chat-${groupId}`)
           .to(groupId)
